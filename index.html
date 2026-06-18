@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FocusFlow - Premium Pomodoro Timer</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Background Decorative Blobs -->
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                <span>FocusFlow</span>
+            </div>
+            <span class="badge">v1.0.0</span>
+        </header>
+
+        <!-- Main Card -->
+        <main class="timer-card">
+            <!-- Mode Switcher -->
+            <div class="mode-selector">
+                <button class="mode-btn active" id="work-mode">Enfoque</button>
+                <button class="mode-btn" id="break-mode">Descanso</button>
+            </div>
+
+            <!-- Timer Circle -->
+            <div class="timer-display-container">
+                <svg class="progress-ring" width="300" height="300">
+                    <circle class="progress-ring__circle-bg" stroke="rgba(255, 255, 255, 0.05)" stroke-width="8" fill="transparent" r="135" cx="150" cy="150"/>
+                    <circle class="progress-ring__circle" id="progress-bar" stroke="var(--accent-color)" stroke-width="8" fill="transparent" r="135" cx="150" cy="150"/>
+                </svg>
+                <div class="timer-text">
+                    <span id="time-display">25:00</span>
+                    <span id="current-state-label" class="state-label">¡A trabajar!</span>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="timer-controls">
+                <button id="start-btn" class="control-btn primary-btn" title="Iniciar">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </button>
+                <button id="pause-btn" class="control-btn" title="Pausar">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+                </button>
+                <button id="reset-btn" class="control-btn" title="Reiniciar">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                </button>
+            </div>
+        </main>
+
+        <!-- Task Section -->
+        <section class="task-section">
+            <h2>Tareas de Hoy</h2>
+            <div class="task-input-container">
+                <input type="text" id="task-input" placeholder="¿Qué vas a lograr ahora?..." autocomplete="off">
+                <button id="add-task-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </button>
+            </div>
+            <ul id="task-list" class="task-list">
+                <!-- Dynamic tasks here -->
+            </ul>
+        </section>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

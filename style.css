@@ -1,0 +1,391 @@
+:root {
+    --bg-color: #0b0f19;
+    --card-bg: rgba(17, 25, 40, 0.65);
+    --border-color: rgba(255, 255, 255, 0.08);
+    --text-primary: #f3f4f6;
+    --text-secondary: #9ca3af;
+    --accent-color: #ff5e5b; /* Work Mode: Coral Red */
+    --accent-break: #10b981;  /* Break Mode: Emerald Green */
+    --accent-glow: rgba(255, 94, 91, 0.3);
+    --font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --card-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    font-family: var(--font-family);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* Decorative background blobs */
+.blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    z-index: -1;
+    opacity: 0.15;
+    animation: float 10s ease-in-out infinite alternate;
+}
+
+.blob-1 {
+    width: 300px;
+    height: 300px;
+    background: var(--accent-color);
+    top: 15%;
+    left: 20%;
+}
+
+.blob-2 {
+    width: 350px;
+    height: 350px;
+    background: #4f46e5; /* Indigo */
+    bottom: 15%;
+    right: 20%;
+    animation-delay: -5s;
+}
+
+@keyframes float {
+    0% { transform: translateY(0) scale(1); }
+    100% { transform: translateY(-30px) scale(1.1); }
+}
+
+/* App Container */
+.app-container {
+    width: 100%;
+    max-width: 450px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Header */
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 10px;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 800;
+    font-size: 1.25rem;
+    letter-spacing: 0.5px;
+    background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.logo svg {
+    stroke: #a5b4fc;
+}
+
+.badge {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-color);
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+/* Timer Card */
+.timer-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    padding: 30px;
+    box-shadow: var(--card-shadow);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
+}
+
+/* Mode Selector */
+.mode-selector {
+    display: flex;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 4px;
+    border-radius: 30px;
+    width: 100%;
+}
+
+.mode-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 10px 0;
+    border-radius: 26px;
+    font-family: var(--font-family);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mode-btn.active {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Timer Circle */
+.timer-display-container {
+    position: relative;
+    width: 300px;
+    height: 300px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.progress-ring {
+    transform: rotate(-90deg);
+}
+
+.progress-ring__circle {
+    transition: stroke-dashoffset 0.35s;
+    transform-origin: 50% 50%;
+}
+
+.timer-text {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+#time-display {
+    font-size: 3.5rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+    font-variant-numeric: tabular-nums;
+}
+
+.state-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 600;
+}
+
+/* Controls */
+.timer-controls {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+.control-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+.control-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+.control-btn:active {
+    transform: translateY(0);
+}
+
+.control-btn.primary-btn {
+    background: var(--accent-color);
+    border: none;
+    width: 68px;
+    height: 68px;
+    box-shadow: 0 0 20px var(--accent-glow);
+}
+
+.control-btn.primary-btn:hover {
+    background: #ff7471;
+    box-shadow: 0 0 25px var(--accent-glow);
+}
+
+/* Task Section */
+.task-section {
+    background: var(--card-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    padding: 24px;
+    box-shadow: var(--card-shadow);
+}
+
+.task-section h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--text-primary);
+}
+
+.task-input-container {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+#task-input {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px 16px;
+    color: var(--text-primary);
+    font-family: var(--font-family);
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+#task-input:focus {
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+#add-task-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    width: 44px;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.2s;
+}
+
+#add-task-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+/* Task List */
+.task-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 180px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+/* Custom scrollbar for task list */
+.task-list::-webkit-scrollbar {
+    width: 4px;
+}
+.task-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+.task-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+}
+
+.task-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    padding: 10px 14px;
+    border-radius: 12px;
+    transition: all 0.2s;
+}
+
+.task-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.05);
+}
+
+.task-item-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.task-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--text-secondary);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.2s;
+}
+
+.task-checkbox:checked {
+    background: var(--accent-break);
+    border-color: var(--accent-break);
+}
+
+.task-checkbox:checked::after {
+    content: "✓";
+    font-size: 11px;
+    color: #fff;
+    font-weight: bold;
+}
+
+.task-text {
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.task-checkbox:checked + .task-text {
+    text-decoration: line-through;
+    color: var(--text-secondary);
+}
+
+.delete-task-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.5;
+    transition: all 0.2s;
+}
+
+.delete-task-btn:hover {
+    color: var(--accent-color);
+    opacity: 1;
+}
