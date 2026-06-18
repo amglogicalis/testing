@@ -1,22 +1,27 @@
-name: Zenon AI Assistant Test
+name: Zenon AI Assistant
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
   workflow_dispatch:
     inputs:
       mode:
-        description: 'Modo: assist, correct, u objective'
+        description: 'Modo de ejecución'
         required: true
-        default: 'assist'
+        default: 'objective'
+        type: choice
+        options:
+          - assist
+          - correct
+          - objective
+      objective-file:
+        description: 'Nombre del archivo con el objetivo (solo para modo objective)'
+        required: false
+        default: 'zenon_objective.md'
 
 jobs:
   zenon:
     runs-on: ubuntu-latest
     
-    # IMPORTANTE: Permisos necesarios para que Zenon pueda comentar en PRs o hacer commits en correct/objective mode
+    # REQUISITO CRÍTICO: Permisos de escritura para poder modificar archivos y hacer commit/push del código generado en el nuevo repo
     permissions:
       contents: write
       pull-requests: write
@@ -28,10 +33,11 @@ jobs:
           fetch-depth: 0
 
       - name: Run Zenon AI Assistant
-        uses: amglogicalis/my-github-actions@main  # <--- Apunta a tu repo y a la rama 'main' (o la que quieras probar)
+        uses: amglogicalis/my-github-actions@main  # O tu ruta local si usaste la opción 3
         with:
           zenon-api-key: ${{ secrets.ZENON_API_KEY }}
           groq-api-key: ${{ secrets.GROQ_API_KEY }}
           cohere-api-key: ${{ secrets.COHERE_API_KEY }}
           openrouter-api-key: ${{ secrets.OPENROUTER_API_KEY }}
-          mode: ${{ github.event.inputs.mode || 'assist' }}
+          mode: ${{ github.event.inputs.mode || 'objective' }}
+          objective-file: ${{ github.event.inputs.objective-file || 'zenon_objective.md' }}
