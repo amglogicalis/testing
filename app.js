@@ -81,19 +81,17 @@ function toggleMode() {
     updateDisplay();
 }
 
-// --- TIMER CONTROLS (BUG ALERT!) ---
-// INICIO DEL TIMER: Aquí reside el fallo de código.
-// No validamos si "timerInterval" ya está en ejecución ni limpiamos el anterior interval antes de crear uno nuevo.
-// Si el usuario presiona "Iniciar" varias veces consecutivas, se acumularán múltiples intervalos acelerando el contador.
+// --- TIMER CONTROLS ---
 function startTimer() {
+    if (timerInterval) {
+        clearInterval(timerInterval);
+    }
     timerInterval = setInterval(tick, 1000);
 }
 
 function pauseTimer() {
     if (timerInterval) {
         clearInterval(timerInterval);
-        // Nota: Solo limpia el último intervalo referenciado por timerInterval.
-        // Los intervalos huérfanos acumulados por múltiples clics de "start" seguirán ejecutándose en segundo plano.
         timerInterval = null;
     }
 }
@@ -112,7 +110,6 @@ resetBtn.addEventListener('click', resetTimer);
 workModeBtn.addEventListener('click', () => {
     if (!isWorkMode) {
         pauseTimer();
-        isWorkMode = false; // so toggleMode sets it to true
         toggleMode();
     }
 });
@@ -120,7 +117,6 @@ workModeBtn.addEventListener('click', () => {
 breakModeBtn.addEventListener('click', () => {
     if (isWorkMode) {
         pauseTimer();
-        isWorkMode = true; // so toggleMode sets it to break/false
         toggleMode();
     }
 });
@@ -133,15 +129,29 @@ function renderTasks() {
     tasks.forEach((task, index) => {
         const li = document.createElement('li');
         li.className = 'task-item';
-        li.innerHTML = `
-            <div class="task-item-content">
-                <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} data-index="${index}">
-                <span class="task-text">${task.text}</span>
-            </div>
-            <button class="delete-task-btn" data-index="${index}">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-            </button>
-        `;
+        const taskText = document.createElement('span');
+        taskText.className = 'task-text';
+        taskText.textContent = task.text;
+        
+        const inputContainer = document.createElement('div');
+        inputContainer.className = 'task-item-content';
+        
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'task-checkbox';
+        checkbox.checked = task.completed;
+        checkbox.dataset.index = index;
+        
+        inputContainer.appendChild(checkbox);
+        inputContainer.appendChild(taskText);
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-task-btn';
+        deleteBtn.dataset.index = index;
+        deleteBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>';
+        
+        li.appendChild(inputContainer);
+        li.appendChild(deleteBtn);
         taskList.appendChild(li);
     });
 }
@@ -156,7 +166,7 @@ function addTask() {
 }
 
 // Handle checkbox toggle and delete actions
-taskList.addEventListener('click', (e) => {
+function handleTaskListClick(e) {
     // Checkbox toggle
     if (e.target.classList.contains('task-checkbox')) {
         const index = parseInt(e.target.dataset.index);
@@ -171,7 +181,7 @@ taskList.addEventListener('click', (e) => {
         tasks.splice(index, 1);
         renderTasks();
     }
-});
+}
 
 // Event listeners for tasks
 addTaskBtn.addEventListener('click', addTask);
@@ -180,6 +190,7 @@ taskInput.addEventListener('keypress', (e) => {
         addTask();
     }
 });
+taskList.addEventListener('click', handleTaskListClick);
 
 // Initial Render
 updateDisplay();
