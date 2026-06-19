@@ -1,2 +1,2 @@
 ## Goal
-Añade un script en javascript llamado `test_math.js` que verifique que una función de suma y una de resta funcionan correctamente con aserciones básicas.
+Como funciona la app del repo? Dimelo de forma breve y sencilla. 
