@@ -1,43 +1,63 @@
 name: Zenon AI Assistant
 
 on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
   workflow_dispatch:
     inputs:
       mode:
-        description: 'Modo de ejecución'
+        description: 'Modo: assist (reportar) | correct (autocorregir) | objective (cumplir meta)'
         required: true
-        default: 'objective'
+        default: 'assist'
         type: choice
         options:
           - assist
           - correct
           - objective
       objective-file:
-        description: 'Nombre del archivo con el objetivo (solo para modo objective)'
+        description: 'Ruta al archivo Markdown del objetivo (solo para modo objective)'
         required: false
         default: 'zenon_objective.md'
 
 jobs:
-  zenon:
+  zenon-assistant:
     runs-on: ubuntu-latest
     
-    # REQUISITO CRÍTICO: Permisos de escritura para poder modificar archivos y hacer commit/push del código generado en el nuevo repo
+    # IMPORTANTE: Estos permisos son necesarios para que Zenon escriba comentarios en PRs
+    # y suba los commits de código autogenerado.
     permissions:
       contents: write
       pull-requests: write
-      
+
     steps:
-      - name: Checkout repository
+      - name: Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Run Zenon AI Assistant
-        uses: amglogicalis/my-github-actions@main  # O tu ruta local si usaste la opción 3
+      # Este paso restaura el archivo de conocimiento acumulativo de Zenon (.zenon_cache.json)
+      # desde el almacenamiento interno de GitHub (si existe una ejecución previa).
+      # Al finalizar el job, GitHub guarda automáticamente el archivo actualizado para la próxima ejecución.
+      # Resultado: Zenon aprende de forma incremental sin repetir análisis ya realizados, ahorrando tokens.
+      - name: Restore Zenon Knowledge Cache
+        uses: actions/cache@v4
+        with:
+          path: .zenon_cache.json
+          key: zenon-knowledge-cache-${{ github.run_id }}
+          restore-keys: |
+            zenon-knowledge-cache-
+
+      - name: Run Zenon AI
+        uses: amglogicalis/Zenon@main
         with:
           zenon-api-key: ${{ secrets.ZENON_API_KEY }}
           groq-api-key: ${{ secrets.GROQ_API_KEY }}
           cohere-api-key: ${{ secrets.COHERE_API_KEY }}
           openrouter-api-key: ${{ secrets.OPENROUTER_API_KEY }}
-          mode: ${{ github.event.inputs.mode || 'objective' }}
+          samba-api-key: ${{ secrets.SAMBA_API_KEY }}
+          cerebras-api-key: ${{ secrets.CEREBRAS_API_KEY }}
+          gh-models-token: ${{ secrets.GH_MODELS_TOKEN }}
+          mode: ${{ github.event.inputs.mode || 'assist' }}
           objective-file: ${{ github.event.inputs.objective-file || 'zenon_objective.md' }}
