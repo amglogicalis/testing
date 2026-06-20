@@ -1,32 +1,29 @@
-name: Zenon AI Assistant
+﻿name: Zenon AI Assistant
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
   workflow_dispatch:
     inputs:
       mode:
-        description: 'Modo: assist (reportar) | correct (autocorregir) | objective (cumplir meta)'
-        required: true
+        description: 'Execution Mode'
+        required: false
         default: 'assist'
         type: choice
         options:
           - assist
           - correct
           - objective
-      objective-file:
-        description: 'Ruta al archivo Markdown del objetivo (solo para modo objective)'
-        required: false
-        default: 'zenon_objective.md'
+          - trainer
+          - reviewer
+          - analyzer
+          - helper
 
 jobs:
-  zenon-assistant:
+  run-zenon:
     runs-on: ubuntu-latest
-    
-    # IMPORTANTE: Estos permisos son necesarios para que Zenon escriba comentarios en PRs
-    # y suba los commits de código autogenerado.
     permissions:
       contents: write
       pull-requests: write
@@ -37,10 +34,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Este paso restaura el archivo de conocimiento acumulativo de Zenon (.zenon_cache.json)
-      # desde el almacenamiento interno de GitHub (si existe una ejecución previa).
-      # Al finalizar el job, GitHub guarda automáticamente el archivo actualizado para la próxima ejecución.
-      # Resultado: Zenon aprende de forma incremental sin repetir análisis ya realizados, ahorrando tokens.
       - name: Restore Zenon Knowledge Cache
         uses: actions/cache@v4
         with:
@@ -49,7 +42,7 @@ jobs:
           restore-keys: |
             zenon-knowledge-cache-
 
-      - name: Run Zenon AI
+      - name: Run Zenon Core Action
         uses: amglogicalis/Zenon@main
         with:
           zenon-api-key: ${{ secrets.ZENON_API_KEY }}
@@ -60,4 +53,3 @@ jobs:
           cerebras-api-key: ${{ secrets.CEREBRAS_API_KEY }}
           gh-models-token: ${{ secrets.GH_MODELS_TOKEN }}
           mode: ${{ github.event.inputs.mode || 'assist' }}
-          objective-file: ${{ github.event.inputs.objective-file || 'zenon_objective.md' }}

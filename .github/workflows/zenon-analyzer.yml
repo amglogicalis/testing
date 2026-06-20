@@ -1,0 +1,27 @@
+﻿name: 📊 Zenon Analyzer
+
+on:
+  workflow_dispatch:
+    inputs:
+      reset:
+        description: 'Reset quota statistics to zero?'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+
+jobs:
+  analyzer:
+    name: 📊 Zenon Analyzer Stats
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Zenon Analyzer
+        uses: amglogicalis/Zenon/.github/actions/analyzer@main
+        with:
+          reset: ${{ inputs.reset }}

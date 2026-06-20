@@ -1,0 +1,60 @@
+﻿name: ⚡ Zenon DevOpser
+
+on:
+  workflow_dispatch:
+    inputs:
+      devops-plan-file:
+        description: 'Plan file path (default: zenon_devops.md)'
+        required: false
+        default: 'zenon_devops.md'
+      self-heal:
+        description: 'Enable AI Self-Healing?'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      notify-email:
+        description: 'Email to send the execution report to'
+        required: false
+        default: ''
+
+jobs:
+  devopser:
+    name: ⚡ Zenon DevOpser Pipeline
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Zenon DevOpser
+        uses: amglogicalis/Zenon/.github/actions/devopser@main
+        with:
+          zenon-api-key: ${{ secrets.ZENON_API_KEY }}
+          groq-api-key: ${{ secrets.GROQ_API_KEY }}
+          cohere-api-key: ${{ secrets.COHERE_API_KEY }}
+          openrouter-api-key: ${{ secrets.OPENROUTER_API_KEY }}
+          samba-api-key: ${{ secrets.SAMBA_API_KEY }}
+          cerebras-api-key: ${{ secrets.CEREBRAS_API_KEY }}
+          gh-models-token: ${{ secrets.GH_MODELS_TOKEN }}
+          devops-plan-file: ${{ inputs.devops-plan-file }}
+          self-heal: ${{ inputs.self-heal }}
+          notify-email: ${{ inputs.notify-email }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Send Email Report
+        if: always() && inputs['notify-email'] != ''
+        uses: dawidd6/action-send-mail@v4
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "⚡ Zenon DevOpser Report — ${{ github.repository }}"
+          to: ${{ inputs.notify-email }}
+          from: Zenon DevOpser
+          html_body: file://zenon_report.html

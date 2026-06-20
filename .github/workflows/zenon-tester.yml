@@ -1,0 +1,42 @@
+﻿name: 🧪 Zenon Tester
+
+on:
+  workflow_dispatch:
+    inputs:
+      test-cmd:
+        description: 'Custom test command (leave empty for auto-detect)'
+        required: false
+        default: ''
+      auto-fix:
+        description: 'Enable auto-fix and commit corrections?'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+jobs:
+  tester:
+    name: 🧪 Zenon Tester & Auto-Fix
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Zenon Tester
+        uses: amglogicalis/Zenon/.github/actions/tester@main
+        with:
+          zenon-api-key: ${{ secrets.ZENON_API_KEY }}
+          groq-api-key: ${{ secrets.GROQ_API_KEY }}
+          cohere-api-key: ${{ secrets.COHERE_API_KEY }}
+          openrouter-api-key: ${{ secrets.OPENROUTER_API_KEY }}
+          samba-api-key: ${{ secrets.SAMBA_API_KEY }}
+          cerebras-api-key: ${{ secrets.CEREBRAS_API_KEY }}
+          gh-models-token: ${{ secrets.GH_MODELS_TOKEN }}
+          test-cmd: ${{ inputs.test-cmd }}
+          auto-fix: ${{ inputs.auto-fix }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
