@@ -1,2 +1,2 @@
 ## Goal
-Añade un script en javascript llamado `test_math.js` que verifique que una función de suma y una de resta funcionan correctamente con aserciones básicas.
+Quiero que lleves esta app a otro nivel, mejorala dale funciones nuevas, interesantes, todo lo que se te ocurra para que sea una app moderna, funcional util y chula.
