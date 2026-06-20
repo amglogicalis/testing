@@ -1,0 +1,30 @@
+﻿name: 🤖 Zenon Helper
+
+on:
+  workflow_dispatch:
+    inputs:
+      query:
+        description: 'Your question about the codebase'
+        required: true
+        default: 'Explain the general architecture of this repository.'
+
+jobs:
+  helper:
+    name: 🤖 Zenon Helper Query
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Zenon Helper
+        uses: amglogicalis/Zenon/.github/actions/helper@main
+        with:
+          zenon-api-key: ${{ secrets.ZENON_API_KEY }}
+          groq-api-key: ${{ secrets.GROQ_API_KEY }}
+          cohere-api-key: ${{ secrets.COHERE_API_KEY }}
+          openrouter-api-key: ${{ secrets.OPENROUTER_API_KEY }}
+          samba-api-key: ${{ secrets.SAMBA_API_KEY }}
+          cerebras-api-key: ${{ secrets.CEREBRAS_API_KEY }}
+          gh-models-token: ${{ secrets.GH_MODELS_TOKEN }}
+          query: ${{ inputs.query }}

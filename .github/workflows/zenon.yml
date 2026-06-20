@@ -1,43 +1,55 @@
-name: Zenon AI Assistant
+﻿name: Zenon AI Assistant
 
 on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
   workflow_dispatch:
     inputs:
       mode:
-        description: 'Modo de ejecución'
-        required: true
-        default: 'objective'
+        description: 'Execution Mode'
+        required: false
+        default: 'assist'
         type: choice
         options:
           - assist
           - correct
           - objective
-      objective-file:
-        description: 'Nombre del archivo con el objetivo (solo para modo objective)'
-        required: false
-        default: 'zenon_objective.md'
+          - trainer
+          - reviewer
+          - analyzer
+          - helper
 
 jobs:
-  zenon:
+  run-zenon:
     runs-on: ubuntu-latest
-    
-    # REQUISITO CRÍTICO: Permisos de escritura para poder modificar archivos y hacer commit/push del código generado en el nuevo repo
     permissions:
       contents: write
       pull-requests: write
-      
+
     steps:
-      - name: Checkout repository
+      - name: Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Run Zenon AI Assistant
-        uses: amglogicalis/my-github-actions@main  # O tu ruta local si usaste la opción 3
+      - name: Restore Zenon Knowledge Cache
+        uses: actions/cache@v4
+        with:
+          path: .zenon_cache.json
+          key: zenon-knowledge-cache-${{ github.run_id }}
+          restore-keys: |
+            zenon-knowledge-cache-
+
+      - name: Run Zenon Core Action
+        uses: amglogicalis/Zenon@main
         with:
           zenon-api-key: ${{ secrets.ZENON_API_KEY }}
           groq-api-key: ${{ secrets.GROQ_API_KEY }}
           cohere-api-key: ${{ secrets.COHERE_API_KEY }}
           openrouter-api-key: ${{ secrets.OPENROUTER_API_KEY }}
-          mode: ${{ github.event.inputs.mode || 'objective' }}
-          objective-file: ${{ github.event.inputs.objective-file || 'zenon_objective.md' }}
+          samba-api-key: ${{ secrets.SAMBA_API_KEY }}
+          cerebras-api-key: ${{ secrets.CEREBRAS_API_KEY }}
+          gh-models-token: ${{ secrets.GH_MODELS_TOKEN }}
+          mode: ${{ github.event.inputs.mode || 'assist' }}
