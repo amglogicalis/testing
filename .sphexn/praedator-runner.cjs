@@ -146,25 +146,52 @@ function scanVulnerabilities(diffText) {
 
 // 3. Real Provider AI Fallback Query Engine
 async function queryAIWithFallback(diffText, secrets, vulnerabilities, metrics) {
-  const prompt = `Actúa como Sphexn Praedator, el auditor de seguridad de código de Terra.
-Analiza este diff:
-${diffText.slice(0, 3500)}
+  // Auto-build fallback chain from env if empty or missing keys
+  let activeChain = (Array.isArray(fallbackChain) && fallbackChain.length > 0)
+    ? fallbackChain.slice()
+    : [
+        { id: 'groq', name: 'Groq Cloud', model: 'llama-3.3-70b-versatile', apiKey: process.env.GROQ_API_KEY },
+        { id: 'gemini', name: 'Google Gemini', model: 'gemini-1.5-flash', apiKey: process.env.GEMINI_API_KEY },
+        { id: 'gh_models', name: 'GitHub Models', model: 'gpt-4o', apiKey: process.env.GH_MODELS_TOKEN || process.env.GITHUB_TOKEN }
+      ];
 
-Secretos detectados: ${JSON.stringify(secrets)}
-Vulnerabilidades: ${JSON.stringify(vulnerabilities)}
-Métricas de líneas: +${metrics.addedLines} / -${metrics.deletedLines} en ${metrics.filesCount} archivo(s).
+  for (const p of activeChain) {
+    if (!p.apiKey) {
+      if (p.id.includes('groq')) p.apiKey = process.env.GROQ_API_KEY;
+      else if (p.id.includes('gemini')) p.apiKey = process.env.GEMINI_API_KEY;
+      else if (p.id.includes('gh_models') || p.id.includes('azure')) p.apiKey = process.env.GH_MODELS_TOKEN || process.env.GITHUB_TOKEN;
+    }
+  }
 
-Responde exclusivamente con un objeto JSON válido (sin markdown ni texto antes/después):
+  const prompt = `Actúa como Sphexn Praedator, el auditor senior de seguridad de código y Pull Requests de la red soberana Terra.
+Tu objetivo es proporcionar un análisis técnico riguroso, quirúrgico y de calidad enterprise para desarrolladores.
+
+DIFF A AUDITAR:
+```diff
+${diffText.slice(0, 4000)}
+```
+
+HALLAZGOS ESTÁTICOS PRELIMINARES:
+- Secretos: ${JSON.stringify(secrets)}
+- Vulnerabilidades/Smells: ${JSON.stringify(vulnerabilities)}
+- Métricas: +${metrics.addedLines} / -${metrics.deletedLines} líneas en ${metrics.filesCount} archivo(s) (${metrics.filesModified.join(', ')}).
+
+INSTRUCCIONES DE AUDITORÍA:
+1. "summary": Evaluación técnica precisa de 2-3 oraciones sobre el propósito real del cambio, arquitectura y seguridad.
+2. "verdict": Elige estrictamente entre "APPROVED" (código limpio), "CHANGES_REQUESTED" (smells o mejoras de robustez) o "SECURITY_BLOCK" (vulnerabilidades críticas o fugas).
+3. "suggestions": Lista de 2 a 4 recomendaciones técnicas hiper-específicas referenciando archivos y líneas de ser aplicable.
+
+Responde ÚNICAMENTE con un objeto JSON válido con este esquema:
 {
-  "summary": "Resumen técnico quirúrgico de 2 a 3 oraciones sobre el impacto y seguridad del cambio",
+  "summary": "...",
   "verdict": "APPROVED" | "CHANGES_REQUESTED" | "SECURITY_BLOCK",
   "suggestions": [
-    "Sugerencia concreta 1 con nombre de archivo y recomendación de remediación",
-    "Sugerencia concreta 2"
+    "...",
+    "..."
   ]
 }`;
 
-  for (const provider of fallbackChain) {
+  for (const provider of activeChain) {
     if (!provider.apiKey) continue;
 
     try {
@@ -190,18 +217,20 @@ Responde exclusivamente con un objeto JSON válido (sin markdown ni texto antes/
         if (res.status === 200 && res.body) {
           const content = res.body.choices?.[0]?.message?.content || '{}';
           const parsed = extractJSON(content) || {};
-          return {
-            providerUsed: `${provider.name} (${provider.model || 'llama-3.3-70b'})`,
-            summary: parsed.summary,
-            verdict: parsed.verdict || (secrets.length > 0 ? 'SECURITY_BLOCK' : 'APPROVED'),
-            suggestions: parsed.suggestions || []
-          };
+          if (parsed.summary) {
+            return {
+              providerUsed: `${provider.name} (${provider.model || 'llama-3.3-70b'})`,
+              summary: parsed.summary,
+              verdict: parsed.verdict || (secrets.length > 0 ? 'SECURITY_BLOCK' : 'APPROVED'),
+              suggestions: parsed.suggestions || []
+            };
+          }
         }
       }
 
       // GOOGLE GEMINI CALL
       if (provider.id === 'gemini' || provider.id.includes('gemini')) {
-        const modelName = provider.model || 'gemini-1.5-pro';
+        const modelName = provider.model || 'gemini-1.5-flash';
         const res = await httpsRequest({
           hostname: 'generativelanguage.googleapis.com',
           path: `/v1beta/models/${modelName}:generateContent?key=${provider.apiKey}`,
@@ -215,12 +244,14 @@ Responde exclusivamente con un objeto JSON válido (sin markdown ni texto antes/
         if (res.status === 200 && res.body) {
           const rawText = res.body.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
           const parsed = extractJSON(rawText) || {};
-          return {
-            providerUsed: `${provider.name} (${modelName})`,
-            summary: parsed.summary,
-            verdict: parsed.verdict || (secrets.length > 0 ? 'SECURITY_BLOCK' : 'APPROVED'),
-            suggestions: parsed.suggestions || []
-          };
+          if (parsed.summary) {
+            return {
+              providerUsed: `${provider.name} (${modelName})`,
+              summary: parsed.summary,
+              verdict: parsed.verdict || (secrets.length > 0 ? 'SECURITY_BLOCK' : 'APPROVED'),
+              suggestions: parsed.suggestions || []
+            };
+          }
         }
       }
 
@@ -244,214 +275,23 @@ Responde exclusivamente con un objeto JSON válido (sin markdown ni texto antes/
         if (res.status === 200 && res.body) {
           const content = res.body.choices?.[0]?.message?.content || '{}';
           const parsed = extractJSON(content) || {};
-          return {
-            providerUsed: `${provider.name} (${provider.model || 'gpt-4o'})`,
-            summary: parsed.summary,
-            verdict: parsed.verdict || (secrets.length > 0 ? 'SECURITY_BLOCK' : 'APPROVED'),
-            suggestions: parsed.suggestions || []
-          };
+          if (parsed.summary) {
+            return {
+              providerUsed: `${provider.name} (${provider.model || 'gpt-4o'})`,
+              summary: parsed.summary,
+              verdict: parsed.verdict || (secrets.length > 0 ? 'SECURITY_BLOCK' : 'APPROVED'),
+              suggestions: parsed.suggestions || []
+            };
+          }
         }
       }
-    } catch (e) {
-      console.warn(`Proveedor ${provider.name} no pudo responder (${e.message}). Probando siguiente en cadena de fallback...`);
+    } catch (err) {
+      console.warn(`Fallo en llamada a ${provider.name}: ${err.message}. Intentando siguiente en matriz...`);
     }
   }
 
-  // High-Precision Deterministic Security Engine (Zero External Failure)
-  const isSecurityBlock = secrets.length > 0;
-  const isCriticalVuln = vulnerabilities.some(v => v.severity === 'CRITICAL');
-  const verdict = isSecurityBlock ? 'SECURITY_BLOCK' : (isCriticalVuln ? 'CHANGES_REQUESTED' : (vulnerabilities.length > 1 ? 'CHANGES_REQUESTED' : 'APPROVED'));
-
-  const autoSuggestions = [];
-  if (secrets.length > 0) {
-    autoSuggestions.push(`Revocar de inmediato los ${secrets.length} secreto(s) expuestos y moverlos a GitHub Actions Secrets o variables de entorno.`);
-  }
-  for (const v of vulnerabilities.slice(0, 3)) {
-    autoSuggestions.push(`${v.file}:${v.line} — ${v.recommendation}`);
-  }
-  if (autoSuggestions.length === 0) {
-    autoSuggestions.push('El diff respeta las pautas de seguridad estática de Terra. Proceder con testing de regresión.');
-  }
-
-  const summary = isSecurityBlock
-    ? `Peligro inminente: Se detectaron ${secrets.length} credenciales o tokens en texto plano en los archivos modificados. La fusión debe bloquearse hasta su revocación.`
-    : (isCriticalVuln
-      ? `Revisión requerida: El diff introduce vulnerabilidades críticas de seguridad (${vulnerabilities.map(v => v.type).join(', ')}). Se requiere corrección antes de continuar.`
-      : `Auditoría satisfactoria: El cambio modifica ${metrics.addedLines} líneas en ${metrics.filesCount} archivo(s) sin fugas de secretos ni vulnerabilidades bloqueantes.`);
-
-  return {
-    providerUsed: 'Motor Determinista Heurístico AST ($0 Compute)',
-    summary,
-    verdict,
-    suggestions: autoSuggestions
-  };
+  console.log('⚠️ Proveedores de IA no disponibles o agotados. Ejecutando Motor Determinista Heurístico AST...');
+  return generateDeterministicAudit(diffText, secrets, vulnerabilities, metrics);
 }
 
-async function run() {
-  console.log('=== SPHEXN PRAEDATOR AUDITOR STARTING ===');
-  console.log(`Modo: ${mode}`);
-  console.log(`Target: ${targetRepo}`);
 
-  let diffContent = inputData;
-  if (diffContent && diffContent.includes('\\n')) {
-    diffContent = diffContent.replace(/\\n/g, '\n');
-  }
-
-  if (mode === 'pr') {
-    const prNumber = inputData;
-    console.log(`Descargando diff oficial de la PR #${prNumber} de ${targetRepo}...`);
-    try {
-      const prDiffRes = await httpsRequest({
-        hostname: 'api.github.com',
-        path: `/repos/${targetRepo}/pulls/${prNumber}`,
-        method: 'GET',
-        headers: {
-          'User-Agent': 'Sphexn-Praedator',
-          'Authorization': `Bearer ${githubToken}`,
-          'Accept': 'application/vnd.github.v3.diff'
-        }
-      });
-      diffContent = typeof prDiffRes.body === 'string' ? prDiffRes.body : JSON.stringify(prDiffRes.body);
-    } catch (e) {
-      console.warn('Error al descargar diff de la PR.');
-    }
-  }
-
-  if (!diffContent || diffContent.trim().length === 0) {
-    diffContent = 'diff --git a/src/index.ts b/src/index.ts\n--- a/src/index.ts\n+++ b/src/index.ts\n@@ -1,1 +1,2 @@\n+// Clean diff';
-  }
-
-  const lines = diffContent.split('\n');
-  let addedLines = 0;
-  let deletedLines = 0;
-  let filesModified = new Set();
-
-  for (const l of lines) {
-    if (l.startsWith('+++ b/')) filesModified.add(l.substring(6).trim());
-    else if (l.startsWith('+') && !l.startsWith('+++')) addedLines++;
-    else if (l.startsWith('-') && !l.startsWith('---')) deletedLines++;
-  }
-
-  const metrics = {
-    addedLines,
-    deletedLines,
-    filesCount: filesModified.size || 1,
-    filesModified: Array.from(filesModified)
-  };
-
-  const secrets = scanSecrets(diffContent);
-  const vulnerabilities = scanVulnerabilities(diffContent);
-  const aiAudit = await queryAIWithFallback(diffContent, secrets, vulnerabilities, metrics);
-
-  let riskScore = 15;
-  if (secrets.length > 0) riskScore += secrets.length * 35;
-  if (vulnerabilities.some(v => v.severity === 'CRITICAL')) riskScore += 35;
-  riskScore += vulnerabilities.filter(v => v.severity === 'HIGH').length * 15;
-  riskScore += Math.min(20, Math.floor(addedLines / 40) * 5);
-  riskScore = Math.min(100, Math.max(5, riskScore));
-
-  const finalVerdict = secrets.length > 0 ? 'SECURITY_BLOCK' : (aiAudit.verdict || (riskScore > 65 ? 'CHANGES_REQUESTED' : 'APPROVED'));
-
-  const auditReport = {
-    id: 'praedator_' + Date.now(),
-    mode,
-    repo: mode === 'pr' ? targetRepo : 'Local Diff Workspace',
-    prNumber: mode === 'pr' ? inputData : null,
-    riskScore,
-    verdict: finalVerdict,
-    addedLines,
-    deletedLines,
-    filesCount: metrics.filesCount,
-    filesModified: metrics.filesModified,
-    secrets,
-    vulnerabilities,
-    providerUsed: aiAudit.providerUsed,
-    summary: aiAudit.summary,
-    suggestions: aiAudit.suggestions,
-    diffPreview: diffContent.slice(0, 3000),
-    timestamp: new Date().toISOString()
-  };
-
-  console.log('==============================================');
-  console.log(`AUDITORÍA COMPLETADA`);
-  console.log(`Risk Score: ${riskScore}/100`);
-  console.log(`Veredicto: ${finalVerdict}`);
-  console.log(`Secretos detectados: ${secrets.length}`);
-  console.log(`Vulnerabilidades: ${vulnerabilities.length}`);
-  console.log(`Proveedor IA: ${aiAudit.providerUsed}`);
-  console.log('==============================================');
-
-  
-  // Post official Praedator review comment to GitHub PR
-  if (mode === 'pr' && githubToken && targetRepo && inputData) {
-    console.log(`Publicando dictamen de auditoría en la PR #${inputData} de ${targetRepo}...`);
-    try {
-      const verdictEmoji = finalVerdict === 'APPROVED' ? '✅' : (finalVerdict === 'SECURITY_BLOCK' ? '🛑' : '⚠️');
-      const badgeColor = finalVerdict === 'APPROVED' ? '22c55e' : (finalVerdict === 'SECURITY_BLOCK' ? 'ef4444' : 'f59e0b');
-
-      const commentLines = [
-        `## 🦅 Sphexn Praedator — Sovereign PR Audit Report`,
-        ``,
-        `### ${verdictEmoji} Verdict: **${finalVerdict}** (Risk Score: **${riskScore}/100**)`,
-        `*Audited via **${aiAudit.providerUsed}** with $0 compute overhead.*`,
-        ``,
-        `| Metric | Value | Status |`,
-        `|---|---|---|`,
-        `| **Exposed Secrets** | ` + secrets.length + ` | ` + (secrets.length > 0 ? '🛑 **SECURITY BLOCK**' : '✅ Clean') + ` |`,
-        `| **OWASP Vulnerabilities** | ` + vulnerabilities.length + ` | ` + (vulnerabilities.length > 0 ? '⚠️ Findings' : '✅ Clean') + ` |`,
-        `| **Code Changes** | +` + addedLines + ` / -` + deletedLines + ` | ` + metrics.filesCount + ` file(s) |`,
-        ``,
-        `### 📋 Executive Summary`,
-        `>` + (aiAudit.summary ? aiAudit.summary.replace(/\n/g, ' ') : 'Auditoría completada satisfactoriamente.'),
-        ``
-      ];
-
-      if (aiAudit.suggestions && aiAudit.suggestions.length > 0) {
-        commentLines.push('### 💡 Surgical Remediation & Action Items');
-        for (const s of aiAudit.suggestions) {
-          commentLines.push('- ' + s);
-        }
-        commentLines.push('');
-      }
-
-      if (secrets.length > 0) {
-        commentLines.push('### 🚨 Critical Security Warning: Plaintext Secrets Detected');
-        commentLines.push('The following tokens were detected in the diff and must be invalidated immediately:');
-        commentLines.push('```text');
-        for (const sec of secrets) {
-          commentLines.push('[' + sec.type + '] Line ' + sec.line + ': ' + sec.sanitizedSnippet);
-        }
-        commentLines.push('```');
-        commentLines.push('');
-      }
-
-      commentLines.push('---');
-      commentLines.push('*Audited automatically by [Sphexn Praedator](https://amglogicalis.github.io/sphexn-repo-public/) — Sovereign Quality Engine for the Terra Ecosystem.*');
-
-      await httpsRequest({
-        hostname: 'api.github.com',
-        path: `/repos/${targetRepo}/issues/${inputData}/comments`,
-        method: 'POST',
-        headers: {
-          'User-Agent': 'Sphexn-Praedator',
-          'Authorization': `Bearer ${githubToken}`,
-          'Accept': 'application/vnd.github.v3+json',
-          'Content-Type': 'application/json'
-        }
-      }, {
-        body: commentLines.join('\n')
-      });
-      console.log(`✔ Comentario de auditoría publicado exitosamente en la PR #${inputData}`);
-    } catch (commentErr) {
-      console.warn('Advertencia al publicar comentario en GitHub PR:', commentErr.message);
-    }
-  }
-
-  const outDir = path.join(process.cwd(), 'audits', 'praedator');
-  fs.mkdirSync(outDir, { recursive: true });
-  const auditFile = path.join(outDir, `audit-${Date.now()}.json`);
-  fs.writeFileSync(auditFile, JSON.stringify(auditReport, null, 2));
-  console.log(`✔ Audit saved to ${auditFile}`);
-}
-
-run();
