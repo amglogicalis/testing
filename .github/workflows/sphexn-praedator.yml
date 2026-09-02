@@ -1,0 +1,67 @@
+name: Sphexn Praedator — PR & Git Diff Auditor
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Audit mode: diff or pr'
+        required: true
+        default: 'diff'
+      repo:
+        description: 'Target repository (owner/repo)'
+        required: true
+        default: 'amglogicalis/pokemon-tcg-project'
+      target_input:
+        description: 'PR number or raw git diff content'
+        required: true
+        default: ''
+      fallback_matrix:
+        description: 'JSON list of prioritized fallback model providers'
+        required: false
+        default: '[]'
+
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: read
+
+jobs:
+  praedator-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run Sphexn Praedator Auditor
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GH_MODELS_TOKEN: ${{ secrets.TOKEN_GH || secrets.GITHUB_TOKEN }}
+          PRAEDATOR_DIFF: ${{ inputs.target_input }}
+        run: |
+          MODE="${{ github.event_name == 'pull_request' && 'pr' || inputs.mode }}"
+          REPO="${{ github.event_name == 'pull_request' && github.repository || inputs.repo }}"
+          INPUT="${{ github.event_name == 'pull_request' && github.event.pull_request.number || inputs.target_input }}"
+          node .sphexn/praedator-runner.cjs "$MODE" "$REPO" "$INPUT" '${{ inputs.fallback_matrix }}'
+
+      - name: Commit and Push Audit Results to Repository
+        run: |
+          git config --global user.name "Sphexn Praedator [Bot]"
+          git config --global user.email "bot@sphexn.terra"
+          git add audits/
+          if git diff --staged --quiet; then
+            echo "No audit changes to commit"
+          else
+            git commit -m "chore(praedator): record PR / diff audit"
+            git push origin main || echo "Audit committed or up-to-date"
+          fi
