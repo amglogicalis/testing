@@ -167,9 +167,9 @@ async function queryAIWithFallback(diffText, secrets, vulnerabilities, metrics) 
 Tu objetivo es proporcionar un análisis técnico riguroso, quirúrgico y de calidad enterprise para desarrolladores.
 
 DIFF A AUDITAR:
-```diff
+--- BEGIN DIFF ---
 ${diffText.slice(0, 4000)}
-```
+--- END DIFF ---
 
 HALLAZGOS ESTÁTICOS PRELIMINARES:
 - Secretos: ${JSON.stringify(secrets)}
