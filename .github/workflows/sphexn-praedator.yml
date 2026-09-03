@@ -41,6 +41,14 @@ jobs:
         with:
           node-version: 20
 
+      - name: Restore Praedator Diff Cache
+        uses: actions/cache@v4
+        with:
+          path: audits/praedator/cache
+          key: praedator-cache-${{ github.repository }}-${{ github.sha }}
+          restore-keys: |
+            praedator-cache-${{ github.repository }}-
+
       - name: Run Sphexn Praedator Auditor
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

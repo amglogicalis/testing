@@ -1,11 +1,18 @@
 /**
  * Authentication and Security Middleware
- * Created for Sphexn Praedator End-to-End Audit Validation
+ * Hardened for Sphexn Praedator End-to-End Precision Validation
  */
 
 function sanitizeInput(input) {
   if (typeof input !== 'string') return '';
-  return input.trim().replace(/[<>]/g, '');
+  return input
+    .trim()
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/\//g, '&#x2F;');
 }
 
 function validateBearerToken(authHeader) {
@@ -13,14 +20,20 @@ function validateBearerToken(authHeader) {
     return { valid: false, error: 'Malformed authorization header' };
   }
   const token = authHeader.substring(7).trim();
-  if (token.length < 16) {
-    return { valid: false, error: 'Token length insufficient' };
+  if (token.length < 32) {
+    return { valid: false, error: 'Token length insufficient for secure entropy' };
   }
-  // Production security check: ensure token meets entropy standards
   return { valid: true, token };
+}
+
+// Benign session refresher timer (Testing zero false positive verification)
+function scheduleSessionKeepAlive(refreshFn, intervalMs = 60000) {
+  if (typeof refreshFn !== 'function') return null;
+  return setTimeout(refreshFn, intervalMs);
 }
 
 module.exports = {
   sanitizeInput,
-  validateBearerToken
+  validateBearerToken,
+  scheduleSessionKeepAlive
 };
