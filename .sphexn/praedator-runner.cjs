@@ -11,6 +11,7 @@ const path = require('path');
 const https = require('https');
 const crypto = require('crypto');
 const cp = require('child_process');
+const vm = require('vm');
 
 // CLI Parameter Parsing
 const mode = process.argv[2] || 'diff';
@@ -319,7 +320,7 @@ function runSyntaxSandboxCheck(diffText) {
       try {
         const testCode = addedLines.join('\n');
         // Quick syntax parse via Function constructor in sandbox isolation
-        new Function('return function() {\n' + testCode + '\n}');
+        new vm.Script(testCode);
       } catch (e) {
         // Only flag if it is an obvious syntax error in self-contained blocks
         if (e instanceof SyntaxError && !e.message.includes('Unexpected token export') && !e.message.includes('Unexpected token import')) {
