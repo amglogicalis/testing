@@ -58,10 +58,12 @@ jobs:
         run: |
           git config --global user.name "Sphexn Praedator [Bot]"
           git config --global user.email "bot@sphexn.terra"
-          git add audits/
-          if git diff --staged --quiet; then
-            echo "No audit changes to commit"
+          if [ -d "audits" ]; then
+            git add audits/ || true
+            if ! git diff --staged --quiet; then
+              git commit -m "chore(praedator): record PR / diff audit" || true
+              git push origin main || echo "Audit committed or up-to-date"
+            fi
           else
-            git commit -m "chore(praedator): record PR / diff audit"
-            git push origin main || echo "Audit committed or up-to-date"
+            echo "No audits directory found to commit"
           fi
