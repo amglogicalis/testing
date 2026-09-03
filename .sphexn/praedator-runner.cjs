@@ -1,12 +1,21 @@
+#!/usr/bin/env node
+
+/**
+ * Sphexn Praedator — Sovereign Pull Request & Git Diff Security Auditor
+ * Powered by Terra ($0 Compute Architecture)
+ * Supports Groq Cloud, OpenRouter, Google Gemini, GitHub Models, and Deterministic AST Heuristics.
+ */
+
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
 
+// CLI Parameter Parsing
 const mode = process.argv[2] || 'diff';
-const targetRepo = process.argv[3] || 'amglogicalis/pokemon-tcg-project';
+const targetRepo = process.argv[3] || 'Local Workspace';
 const inputData = process.env.PRAEDATOR_DIFF || process.argv[4] || '';
 const fallbackConfigRaw = process.argv[5] || '[]';
-const githubToken = process.env.GITHUB_TOKEN || process.env.GH_PAT || '';
+const githubToken = process.env.GITHUB_TOKEN || process.env.GH_TOKEN || process.env.TOKEN_GH || '';
 
 let fallbackChain = [];
 try {
@@ -15,12 +24,13 @@ try {
   fallbackChain = [];
 }
 
+// Auto-populate fallback chain from environment if not supplied via CLI
 if (!Array.isArray(fallbackChain) || fallbackChain.length === 0 || !fallbackChain.some(p => p.apiKey)) {
   fallbackChain = [
     { id: 'groq', name: 'Groq Cloud', model: 'llama-3.3-70b-versatile', apiKey: process.env.GROQ_API_KEY },
     { id: 'openrouter', name: 'OpenRouter AI', model: 'meta-llama/llama-3.3-70b-instruct:free', apiKey: process.env.OPENROUTER_API_KEY },
     { id: 'gemini', name: 'Google Gemini', model: 'gemini-1.5-flash', apiKey: process.env.GEMINI_API_KEY },
-    { id: 'gh_models', name: 'GitHub Models', model: 'gpt-4o', apiKey: process.env.GH_MODELS_TOKEN || process.env.GITHUB_TOKEN }
+    { id: 'gh_models', name: 'GitHub Models', model: 'gpt-4o', apiKey: process.env.GH_MODELS_TOKEN || process.env.TOKEN_GH || githubToken }
   ];
 }
 
@@ -29,7 +39,9 @@ for (const p of fallbackChain) {
     if (p.id.includes('groq')) p.apiKey = process.env.GROQ_API_KEY;
     else if (p.id.includes('openrouter')) p.apiKey = process.env.OPENROUTER_API_KEY;
     else if (p.id.includes('gemini')) p.apiKey = process.env.GEMINI_API_KEY;
-    else if (p.id.includes('gh_models') || p.id.includes('azure') || p.id.includes('github')) p.apiKey = process.env.GH_MODELS_TOKEN || process.env.GITHUB_TOKEN;
+    else if (p.id.includes('gh_models') || p.id.includes('github') || p.id.includes('azure')) {
+      p.apiKey = process.env.GH_MODELS_TOKEN || process.env.TOKEN_GH || githubToken;
+    }
   }
 }
 
@@ -50,6 +62,25 @@ function httpsRequest(options, postData) {
     if (postData) req.write(typeof postData === 'string' ? postData : JSON.stringify(postData));
     req.end();
   });
+}
+
+function extractJSON(str) {
+  if (!str) return null;
+  const clean = str.trim();
+  try { return JSON.parse(clean); } catch (e) {}
+
+  // Match ```json ... ``` block
+  const blockMatch = clean.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+  if (blockMatch && blockMatch[1]) {
+    try { return JSON.parse(blockMatch[1].trim()); } catch (e) {}
+  }
+
+  // Match first outer { ... }
+  const objMatch = clean.match(/\{[\s\S]*\}/);
+  if (objMatch) {
+    try { return JSON.parse(objMatch[0]); } catch (e) {}
+  }
+  return null;
 }
 
 // 1. High-Accuracy Secret Scanner
@@ -74,22 +105,23 @@ function scanSecrets(diffText) {
       currentFile = line.substring(6).trim();
       continue;
     }
+
     if (line.startsWith('+') && !line.startsWith('+++')) {
       const addedContent = line.substring(1);
       for (const p of patterns) {
-        let match;
         p.regex.lastIndex = 0;
+        let match;
         while ((match = p.regex.exec(addedContent)) !== null) {
-          const secretSnippet = match[0];
-          const redacted = secretSnippet.length > 8 
-            ? secretSnippet.substring(0, 4) + '...' + secretSnippet.substring(secretSnippet.length - 4)
+          const rawSecret = match[0];
+          const sanitized = rawSecret.length > 8
+            ? rawSecret.substring(0, 4) + '...' + rawSecret.substring(rawSecret.length - 4)
             : '****';
           findings.push({
             type: p.type,
-            severity: p.severity,
             file: currentFile,
             line: i + 1,
-            redactedSnippet: redacted
+            severity: p.severity,
+            sanitizedSnippet: sanitized
           });
         }
       }
@@ -99,15 +131,34 @@ function scanSecrets(diffText) {
   return findings;
 }
 
-// 2. OWASP & Code Smells Scanner
+// 2. OWASP Top 10 & Code Smells Scanner
 function scanVulnerabilities(diffText) {
   const issues = [];
   const rules = [
-    { type: 'Inyección SQL Potencial', regex: /(?:SELECT|INSERT|UPDATE|DELETE)\s+.*(?:\+|`|\$\{).*(?:req\.|params\.|body\.|query\.)/gi, severity: 'CRITICAL', recommendation: 'Usa consultas parametrizadas o un ORM en lugar de concatenar entradas de usuario.' },
-    { type: 'Ejecución Dinámica Insegura (eval)', regex: /\beval\s*\(/g, severity: 'HIGH', recommendation: 'Remueve eval(); permite inyección arbitraria y Remote Code Execution (RCE).' },
-    { type: 'Riesgo XSS (dangerouslySetInnerHTML)', regex: /dangerouslySetInnerHTML/g, severity: 'HIGH', recommendation: 'Sanitiza el contenido HTML con librerías como DOMPurify antes de insertarlo.' },
-    { type: 'Validación SSL Desactivada', regex: /rejectUnauthorized\s*:\s*false/g, severity: 'HIGH', recommendation: 'Nunca deshabilites rejectUnauthorized; expone la conexión a ataques Man-in-the-Middle.' },
-    { type: 'Consola de Depuración Olvidada', regex: /console\.(?:log|debug|trace)\s*\(/g, severity: 'LOW', recommendation: 'Elimina llamadas a console.log antes de fusionar para no ensuciar logs de producción.' }
+    {
+      type: 'SQL Injection Risk',
+      regex: /(?:SELECT|INSERT|UPDATE|DELETE|FROM|WHERE)\s+.*?\+\s*[a-zA-Z0-9_$.]+/gi,
+      severity: 'HIGH',
+      recommendation: 'Usar queries parametrizadas (Prepared Statements) en lugar de concatenar cadenas.'
+    },
+    {
+      type: 'Arbitrary Code Execution (eval / Function)',
+      regex: /\b(?:eval|setTimeout|setInterval)\s*\(\s*[a-zA-Z0-9_$.]+\s*\)/g,
+      severity: 'CRITICAL',
+      recommendation: 'Evitar el uso de eval() o strings dinámicos en temporizadores.'
+    },
+    {
+      type: 'Cross-Site Scripting (dangerouslySetInnerHTML)',
+      regex: /dangerouslySetInnerHTML\s*=\s*\{\s*\{\s*__html/g,
+      severity: 'HIGH',
+      recommendation: 'Sanitizar HTML con bibliotecas probadas como DOMPurify antes de renderizar.'
+    },
+    {
+      type: 'Debug Logging in Production',
+      regex: /console\.(?:log|debug|info)\s*\(/g,
+      severity: 'LOW',
+      recommendation: 'Eliminar console.log() antes de fusionar a ramas principales.'
+    }
   ];
 
   const lines = diffText.split('\n');
@@ -119,16 +170,17 @@ function scanVulnerabilities(diffText) {
       currentFile = line.substring(6).trim();
       continue;
     }
+
     if (line.startsWith('+') && !line.startsWith('+++')) {
-      const added = line.substring(1);
+      const content = line.substring(1);
       for (const r of rules) {
         r.regex.lastIndex = 0;
-        if (r.regex.test(added)) {
+        if (r.regex.test(content)) {
           issues.push({
             type: r.type,
-            severity: r.severity,
             file: currentFile,
             line: i + 1,
+            severity: r.severity,
             recommendation: r.recommendation
           });
         }
@@ -139,23 +191,33 @@ function scanVulnerabilities(diffText) {
   return issues;
 }
 
-// 3. Real Provider AI Fallback Query Engine
+// 3. Real AI Fallback Query Engine
 async function queryAIWithFallback(diffText, secrets, vulnerabilities, metrics) {
-  const prompt = `Actúa como Sphexn Praedator, el auditor de seguridad de código de Terra.
-Analiza este diff:
-${diffText.slice(0, 3500)}
+  const prompt = `Actúa como Sphexn Praedator, el auditor senior de seguridad de código y Pull Requests de la red soberana Terra.
+Tu objetivo es proporcionar un análisis técnico riguroso, quirúrgico y de calidad enterprise para desarrolladores.
 
-Secretos detectados: ${JSON.stringify(secrets)}
-Vulnerabilidades: ${JSON.stringify(vulnerabilities)}
-Métricas de líneas: +${metrics.addedLines} / -${metrics.deletedLines} en ${metrics.filesCount} archivo(s).
+DIFF A AUDITAR:
+--- BEGIN DIFF ---
+${diffText.slice(0, 4000)}
+--- END DIFF ---
 
-Responde exclusivamente con un objeto JSON válido (sin markdown ni texto antes/después):
+HALLAZGOS ESTÁTICOS PRELIMINARES:
+- Secretos: ${JSON.stringify(secrets)}
+- Vulnerabilidades/Smells: ${JSON.stringify(vulnerabilities)}
+- Métricas: +${metrics.addedLines} / -${metrics.deletedLines} líneas en ${metrics.filesCount} archivo(s) (${metrics.filesModified.join(', ')}).
+
+INSTRUCCIONES DE AUDITORÍA:
+1. "summary": Evaluación técnica precisa de 2-3 oraciones sobre el propósito real del cambio, arquitectura y seguridad.
+2. "verdict": Elige estrictamente entre "APPROVED" (código limpio), "CHANGES_REQUESTED" (smells o mejoras de robustez) o "SECURITY_BLOCK" (vulnerabilidades críticas o fugas).
+3. "suggestions": Lista de 2 a 4 recomendaciones técnicas hiper-específicas referenciando archivos y líneas de ser aplicable.
+
+Responde ÚNICAMENTE con un objeto JSON válido con este esquema:
 {
-  "summary": "Resumen técnico quirúrgico de 2 a 3 oraciones sobre el impacto y seguridad del cambio",
+  "summary": "...",
   "verdict": "APPROVED" | "CHANGES_REQUESTED" | "SECURITY_BLOCK",
   "suggestions": [
-    "Sugerencia concreta 1 con nombre de archivo y recomendación de remediación",
-    "Sugerencia concreta 2"
+    "...",
+    "..."
   ]
 }`;
 
@@ -179,24 +241,63 @@ Responde exclusivamente con un objeto JSON válido (sin markdown ni texto antes/
           model: provider.model || 'llama-3.3-70b-versatile',
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.1,
-          max_tokens: 600
+          max_tokens: 800
         });
 
         if (res.status === 200 && res.body) {
           const content = res.body.choices?.[0]?.message?.content || '{}';
-          const parsed = JSON.parse(content.replace(/```json/g, '').replace(/```/g, '').trim());
-          return {
-            providerUsed: `${provider.name} (${provider.model || 'llama-3.3-70b'})`,
-            summary: parsed.summary,
-            verdict: parsed.verdict || (secrets.length > 0 ? 'SECURITY_BLOCK' : 'APPROVED'),
-            suggestions: parsed.suggestions || []
-          };
+          const parsed = extractJSON(content) || {};
+          if (parsed.summary) {
+            return {
+              providerUsed: `${provider.name} (${provider.model || 'llama-3.3-70b'})`,
+              summary: parsed.summary,
+              verdict: parsed.verdict || (secrets.length > 0 ? 'SECURITY_BLOCK' : 'APPROVED'),
+              suggestions: parsed.suggestions || []
+            };
+          }
+        } else {
+          console.warn(`[Groq Cloud] HTTP ${res.status}: ${typeof res.body === 'object' ? JSON.stringify(res.body) : res.body}`);
+        }
+      }
+
+      // OPENROUTER CALL
+      if (provider.id === 'openrouter' || provider.id.includes('openrouter')) {
+        const res = await httpsRequest({
+          hostname: 'openrouter.ai',
+          path: '/api/v1/chat/completions',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${provider.apiKey}`,
+            'HTTP-Referer': 'https://github.com/amglogicalis/Sphexn',
+            'X-Title': 'Sphexn Praedator'
+          }
+        }, {
+          model: provider.model || 'meta-llama/llama-3.3-70b-instruct:free',
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.1,
+          max_tokens: 800
+        });
+
+        if (res.status === 200 && res.body) {
+          const content = res.body.choices?.[0]?.message?.content || '{}';
+          const parsed = extractJSON(content) || {};
+          if (parsed.summary) {
+            return {
+              providerUsed: `${provider.name} (${provider.model || 'llama-3.3-70b'})`,
+              summary: parsed.summary,
+              verdict: parsed.verdict || (secrets.length > 0 ? 'SECURITY_BLOCK' : 'APPROVED'),
+              suggestions: parsed.suggestions || []
+            };
+          }
+        } else {
+          console.warn(`[OpenRouter] HTTP ${res.status}: ${typeof res.body === 'object' ? JSON.stringify(res.body) : res.body}`);
         }
       }
 
       // GOOGLE GEMINI CALL
       if (provider.id === 'gemini' || provider.id.includes('gemini')) {
-        const modelName = provider.model || 'gemini-1.5-pro';
+        const modelName = provider.model || 'gemini-1.5-flash';
         const res = await httpsRequest({
           hostname: 'generativelanguage.googleapis.com',
           path: `/v1beta/models/${modelName}:generateContent?key=${provider.apiKey}`,
@@ -204,26 +305,30 @@ Responde exclusivamente con un objeto JSON válido (sin markdown ni texto antes/
           headers: { 'Content-Type': 'application/json' }
         }, {
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.1, maxOutputTokens: 600 }
+          generationConfig: { temperature: 0.1, maxOutputTokens: 800 }
         });
 
         if (res.status === 200 && res.body) {
           const rawText = res.body.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-          const parsed = JSON.parse(rawText.replace(/```json/g, '').replace(/```/g, '').trim());
-          return {
-            providerUsed: `${provider.name} (${modelName})`,
-            summary: parsed.summary,
-            verdict: parsed.verdict || (secrets.length > 0 ? 'SECURITY_BLOCK' : 'APPROVED'),
-            suggestions: parsed.suggestions || []
-          };
+          const parsed = extractJSON(rawText) || {};
+          if (parsed.summary) {
+            return {
+              providerUsed: `${provider.name} (${modelName})`,
+              summary: parsed.summary,
+              verdict: parsed.verdict || (secrets.length > 0 ? 'SECURITY_BLOCK' : 'APPROVED'),
+              suggestions: parsed.suggestions || []
+            };
+          }
+        } else {
+          console.warn(`[Google Gemini] HTTP ${res.status}: ${typeof res.body === 'object' ? JSON.stringify(res.body) : res.body}`);
         }
       }
 
       // GITHUB MODELS CALL
-      if (provider.id === 'gh_models' || provider.id.includes('gh_models')) {
+      if (provider.id === 'gh_models' || provider.id.includes('gh_models') || provider.id.includes('github')) {
         const res = await httpsRequest({
-          hostname: 'models.inference.ai.azure.com',
-          path: '/chat/completions',
+          hostname: 'models.github.ai',
+          path: '/inference/chat/completions',
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -233,18 +338,22 @@ Responde exclusivamente con un objeto JSON válido (sin markdown ni texto antes/
           model: provider.model || 'gpt-4o',
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.1,
-          max_tokens: 600
+          max_tokens: 800
         });
 
         if (res.status === 200 && res.body) {
           const content = res.body.choices?.[0]?.message?.content || '{}';
-          const parsed = JSON.parse(content.replace(/```json/g, '').replace(/```/g, '').trim());
-          return {
-            providerUsed: `${provider.name} (${provider.model || 'gpt-4o'})`,
-            summary: parsed.summary,
-            verdict: parsed.verdict || (secrets.length > 0 ? 'SECURITY_BLOCK' : 'APPROVED'),
-            suggestions: parsed.suggestions || []
-          };
+          const parsed = extractJSON(content) || {};
+          if (parsed.summary) {
+            return {
+              providerUsed: `${provider.name} (${provider.model || 'gpt-4o'})`,
+              summary: parsed.summary,
+              verdict: parsed.verdict || (secrets.length > 0 ? 'SECURITY_BLOCK' : 'APPROVED'),
+              suggestions: parsed.suggestions || []
+            };
+          }
+        } else {
+          console.warn(`[GitHub Models] HTTP ${res.status}: ${typeof res.body === 'object' ? JSON.stringify(res.body) : res.body}`);
         }
       }
     } catch (e) {
@@ -252,7 +361,11 @@ Responde exclusivamente con un objeto JSON válido (sin markdown ni texto antes/
     }
   }
 
-  // High-Precision Deterministic Security Engine (Zero External Failure)
+  // 4. Deterministic Fallback Heuristic Generator (Zero External Failure)
+  return generateDeterministicAudit(diffText, secrets, vulnerabilities, metrics);
+}
+
+function generateDeterministicAudit(diffText, secrets, vulnerabilities, metrics) {
   const isSecurityBlock = secrets.length > 0;
   const isCriticalVuln = vulnerabilities.some(v => v.severity === 'CRITICAL');
   const verdict = isSecurityBlock ? 'SECURITY_BLOCK' : (isCriticalVuln ? 'CHANGES_REQUESTED' : (vulnerabilities.length > 1 ? 'CHANGES_REQUESTED' : 'APPROVED'));
@@ -308,7 +421,7 @@ async function run() {
       });
       diffContent = typeof prDiffRes.body === 'string' ? prDiffRes.body : JSON.stringify(prDiffRes.body);
     } catch (e) {
-      console.warn('Error al descargar diff de la PR.');
+      console.warn('Error al descargar diff de la PR:', e.message);
     }
   }
 
@@ -439,7 +552,7 @@ async function run() {
     }
   }
 
-    const outDir = path.join(process.cwd(), 'audits', 'praedator');
+  const outDir = path.join(process.cwd(), 'audits', 'praedator');
   fs.mkdirSync(outDir, { recursive: true });
   const auditFile = path.join(outDir, `audit-${Date.now()}.json`);
   fs.writeFileSync(auditFile, JSON.stringify(auditReport, null, 2));
