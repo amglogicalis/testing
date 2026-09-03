@@ -32,8 +32,14 @@ function scheduleSessionKeepAlive(refreshFn, intervalMs = 60000) {
   return setTimeout(refreshFn, intervalMs);
 }
 
+function revokeExpiredSessions(sessionStore, maxAgeMs = 86400000) {
+  if (!sessionStore || typeof sessionStore.clear !== 'function') return 0;
+  return sessionStore.clear(maxAgeMs);
+}
+
 module.exports = {
   sanitizeInput,
   validateBearerToken,
-  scheduleSessionKeepAlive
+  scheduleSessionKeepAlive,
+  revokeExpiredSessions
 };

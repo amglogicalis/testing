@@ -668,12 +668,18 @@ async function run() {
       console.log(`Preparando Pull Request de sincronización en ${targetRepo}...`);
       const syncBranch = `sphexn-micans-sync-${Date.now()}`;
       try {
-        cp.execSync(`git checkout -b ${syncBranch}`, { stdio: 'ignore' });
+        cp.execSync('git config user.name "Sphexn Micans [Bot]"', { stdio: 'ignore' });
+        cp.execSync('git config user.email "bot@sphexn.terra"', { stdio: 'ignore' });
+        cp.execSync(`git checkout -B ${syncBranch}`, { stdio: 'ignore' });
         for (const doc of docFilePaths) {
           cp.execSync(`git add ${doc}`, { stdio: 'ignore' });
         }
         cp.execSync(`git commit -m "chore(docs): sync documentation with latest code signatures via Sphexn Micans"`, { stdio: 'ignore' });
-        cp.execSync(`git push origin ${syncBranch}`, { stdio: 'ignore' });
+        if (githubToken) {
+          cp.execSync(`git push https://x-access-token:${githubToken}@github.com/${targetRepo}.git ${syncBranch} --force`, { stdio: 'ignore' });
+        } else {
+          cp.execSync(`git push origin ${syncBranch} --force`, { stdio: 'ignore' });
+        }
 
         const prRes = await httpsRequest({
           hostname: 'api.github.com',
