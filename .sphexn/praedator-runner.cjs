@@ -18,6 +18,7 @@ try {
 if (!Array.isArray(fallbackChain) || fallbackChain.length === 0 || !fallbackChain.some(p => p.apiKey)) {
   fallbackChain = [
     { id: 'groq', name: 'Groq Cloud', model: 'llama-3.3-70b-versatile', apiKey: process.env.GROQ_API_KEY },
+    { id: 'openrouter', name: 'OpenRouter AI', model: 'meta-llama/llama-3.3-70b-instruct:free', apiKey: process.env.OPENROUTER_API_KEY },
     { id: 'gemini', name: 'Google Gemini', model: 'gemini-1.5-flash', apiKey: process.env.GEMINI_API_KEY },
     { id: 'gh_models', name: 'GitHub Models', model: 'gpt-4o', apiKey: process.env.GH_MODELS_TOKEN || process.env.GITHUB_TOKEN }
   ];
@@ -26,8 +27,9 @@ if (!Array.isArray(fallbackChain) || fallbackChain.length === 0 || !fallbackChai
 for (const p of fallbackChain) {
   if (!p.apiKey) {
     if (p.id.includes('groq')) p.apiKey = process.env.GROQ_API_KEY;
+    else if (p.id.includes('openrouter')) p.apiKey = process.env.OPENROUTER_API_KEY;
     else if (p.id.includes('gemini')) p.apiKey = process.env.GEMINI_API_KEY;
-    else if (p.id.includes('gh_models') || p.id.includes('azure')) p.apiKey = process.env.GH_MODELS_TOKEN || process.env.GITHUB_TOKEN;
+    else if (p.id.includes('gh_models') || p.id.includes('azure') || p.id.includes('github')) p.apiKey = process.env.GH_MODELS_TOKEN || process.env.GITHUB_TOKEN;
   }
 }
 
