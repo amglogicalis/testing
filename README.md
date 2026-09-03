@@ -66,3 +66,14 @@ This repository contains utility modules and security middleware.
 - `GITHUB_STEP_SUMMARY`: Variable de configuración activa en el código.
 - `INPUT_OBJECTIVE`: Variable de configuración activa en el código.
 - `INPUT_DOCS`: Variable de configuración activa en el código.
+
+## 📝 API & Exports Reference (Sincronizado por Sphexn Micans)
+
+### Funciones y Métodos Exportados
+| Función | Argumentos | Archivo Origen |
+|---|---|---|
+| `sanitizeInput` | `input` | `src/auth-middleware.js` |
+| `validateBearerToken` | `authHeader` | `src/auth-middleware.js` |
+| `scheduleSessionKeepAlive` | `refreshFn, intervalMs = 60000` | `src/auth-middleware.js` |
+| `revokeExpiredSessions` | `sessionStore, maxAgeMs = 86400000` | `src/auth-middleware.js` |
+

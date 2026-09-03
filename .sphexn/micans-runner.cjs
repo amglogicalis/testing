@@ -95,6 +95,14 @@ function extractJSON(str) {
 // ----------------------------------------------------
 // 1. High-Performance AST Symbol Extractor (Anti-429)
 // ----------------------------------------------------
+const IGNORED_ENV_PREFIXES = ['GITHUB_', 'INPUT_', 'RUNNER_', 'ACTIONS_', 'npm_', 'CI', 'NODE_', 'PATH', 'PWD', 'HOME', 'SHELL', 'USER'];
+const IGNORED_ENV_NAMES = new Set([
+  'PORT', 'NODE_ENV', 'CI', 'PATH', 'PWD', 'HOME', 'USER', 'SHELL',
+  'GITHUB_TOKEN', 'GH_TOKEN', 'TOKEN_GH', 'GITHUB_MODELS_TOKEN',
+  'GROQ_API_KEY', 'CEREBRAS_API_KEY', 'OPENROUTER_API_KEY', 'GEMINI_API_KEY',
+  'GH_MODELS_TOKEN'
+]);
+
 function extractCodeSymbols(codeFiles) {
   const symbols = {
     functions: [],
@@ -108,10 +116,14 @@ function extractCodeSymbols(codeFiles) {
     const content = file.content;
     const filename = file.path;
 
-    // 1. CLI Commands & Binaries
-    if (filename.includes('bin/') || filename.endsWith('.sh') || filename.endsWith('.ps1')) {
-      const cliMatch = content.match(/\b(?:commander|yargs|minimist|command\(['"]([\w-]+)['"]\)|program\.command\(['"]([\w-]+)['"]\))/g);
-      const flagMatches = content.match(/--[\w-]+/g);
+    // Ignore runner scripts, tests, and configuration files
+    if (filename.includes('.sphexn') || filename.includes('.github') || filename.includes('test_') || filename.includes('.test.') || filename.includes('.spec.')) {
+      continue;
+    }
+
+    // 1. CLI Commands & Binaries (bin/ or scripts)
+    if (filename.startsWith('bin/') || filename.endsWith('.sh') || filename.endsWith('.ps1')) {
+      const flagMatches = content.match(/--[a-zA-Z0-9_-]+/g);
       if (flagMatches) {
         symbols.cliCommands.push({
           file: filename,
@@ -120,18 +132,54 @@ function extractCodeSymbols(codeFiles) {
       }
     }
 
-    // 2. Exported Functions & Methods
-    const fnRegex = /(?:export\s+(?:async\s+)?function\s+([\w$]+)\s*\(([^)]*)\)|(?:exports\.|module\.exports\.)([\w$]+)\s*=\s*(?:async\s+)?(?:\(([^)]*)\)|function\s*\(([^)]*)\))|(?:const|let|var)\s+([\w$]+)\s*=\s*(?:async\s+)?\(([^)]*)\)\s*=>)/g;
+    // 2. Exported Functions & Methods ONLY (Public API surface)
+    // A. export function foo(args) or export const foo = (args) =>
+    const esmExportRegex = /export\s+(?:async\s+)?(?:function\s+([a-zA-Z0-9_$]+)\s*\(([^)]*)\)|(?:const|let|var)\s+([a-zA-Z0-9_$]+)\s*=\s*(?:async\s+)?\(([^)]*)\)\s*=>)/g;
     let m;
-    while ((m = fnRegex.exec(content)) !== null) {
-      const name = m[1] || m[3] || m[6];
-      const params = (m[2] || m[4] || m[5] || m[7] || '').trim();
-      if (name && !name.startsWith('_') && name !== 'anonymous') {
+    while ((m = esmExportRegex.exec(content)) !== null) {
+      const name = m[1] || m[3];
+      const params = (m[2] || m[4] || '').trim();
+      if (name && !name.startsWith('_')) {
         symbols.functions.push({
           name,
           params: params.split(',').map(p => p.trim()).filter(Boolean),
           file: filename
         });
+      }
+    }
+
+    // B. exports.foo = function(args) or module.exports.foo = (args) =>
+    const cjsNamedExportRegex = /(?:exports|module\.exports)\.([a-zA-Z0-9_$]+)\s*=\s*(?:async\s+)?(?:function\s*\(([^)]*)\)|\(([^)]*)\)\s*=>)/g;
+    let cm;
+    while ((cm = cjsNamedExportRegex.exec(content)) !== null) {
+      const name = cm[1];
+      const params = (cm[2] || cm[3] || '').trim();
+      if (name && !name.startsWith('_')) {
+        symbols.functions.push({
+          name,
+          params: params.split(',').map(p => p.trim()).filter(Boolean),
+          file: filename
+        });
+      }
+    }
+
+    // C. module.exports = { func1, func2, ... }
+    const cjsObjectExportRegex = /module\.exports\s*=\s*\{([^}]+)\}/g;
+    let objMatch;
+    while ((objMatch = cjsObjectExportRegex.exec(content)) !== null) {
+      const exportedKeys = objMatch[1].split(',').map(k => k.trim().split(':')[0].trim()).filter(Boolean);
+      for (const k of exportedKeys) {
+        if (/^[a-zA-Z0-9_$]+$/.test(k) && !k.startsWith('_')) {
+          // Look up parameter signature inside file
+          const sigRegex = new RegExp(`(?:function\\s+${k}|const\\s+${k}\\s*=\\s*(?:async\\s+)?)\\s*\\(([^)]*)\\)`);
+          const sigMatch = content.match(sigRegex);
+          const params = sigMatch ? sigMatch[1].trim() : '';
+          symbols.functions.push({
+            name: k,
+            params: params ? params.split(',').map(p => p.trim()).filter(Boolean) : [],
+            file: filename
+          });
+        }
       }
     }
 
@@ -146,15 +194,19 @@ function extractCodeSymbols(codeFiles) {
       });
     }
 
-    // 4. Environment Variables
+    // 4. Application-Domain Environment Variables ONLY (Filtered)
     const envRegex = /process\.env\.([A-Z0-9_]+)/g;
     let ev;
     while ((ev = envRegex.exec(content)) !== null) {
-      symbols.envVars.add(ev[1]);
+      const varName = ev[1];
+      const isIgnored = IGNORED_ENV_NAMES.has(varName) || IGNORED_ENV_PREFIXES.some(prefix => varName.startsWith(prefix));
+      if (!isIgnored) {
+        symbols.envVars.add(varName);
+      }
     }
 
     // 5. TypeScript Interfaces / Types
-    const ifaceRegex = /export\s+(?:interface|type)\s+([\w$]+)/g;
+    const ifaceRegex = /export\s+(?:interface|type)\s+([a-zA-Z0-9_$]+)/g;
     let iface;
     while ((iface = ifaceRegex.exec(content)) !== null) {
       symbols.interfaces.push({
@@ -163,6 +215,15 @@ function extractCodeSymbols(codeFiles) {
       });
     }
   }
+
+  // Deduplicate functions by name + file
+  const seenFns = new Set();
+  symbols.functions = symbols.functions.filter(f => {
+    const key = f.name + '@' + f.file;
+    if (seenFns.has(key)) return false;
+    seenFns.add(key);
+    return true;
+  });
 
   symbols.envVars = Array.from(symbols.envVars);
   return symbols;
@@ -473,7 +534,7 @@ function generateDeterministicMicansPatch(docFilename, docContent, discrepancies
   const fns = discrepancies.filter(d => d.type === 'MISSING_FUNCTION_IN_DOCS');
   if (fns.length > 0) {
     appendLines.push('### Funciones y Métodos Exportados');
-    appendLines.push('| Función | Argumentos | Archivo |');
+    appendLines.push('| Función | Argumentos | Archivo Origen |');
     appendLines.push('|---|---|---|');
     for (const f of fns) {
       appendLines.push(`| \`${f.symbol}\` | \`${(f.params || []).join(', ')}\` | \`${f.file}\` |`);
@@ -484,7 +545,7 @@ function generateDeterministicMicansPatch(docFilename, docContent, discrepancies
   const eps = discrepancies.filter(d => d.type === 'MISSING_ENDPOINT');
   if (eps.length > 0) {
     appendLines.push('### Endpoints HTTP');
-    appendLines.push('| Método y Ruta | Archivo |');
+    appendLines.push('| Método y Ruta | Archivo Origen |');
     appendLines.push('|---|---|');
     for (const ep of eps) {
       appendLines.push(`| \`${ep.symbol}\` | \`${ep.file}\` |`);
@@ -501,9 +562,9 @@ function generateDeterministicMicansPatch(docFilename, docContent, discrepancies
     appendLines.push('');
   }
 
-  // Find last line or section to append
   const trimmed = docContent.trim();
-  const lastLine = trimmed.split('\n').pop() || '';
+  const lines = trimmed.split('\n');
+  const lastLine = lines[lines.length - 1] || '';
   patches.push({
     section: 'Append API Reference',
     search: lastLine,
@@ -512,7 +573,7 @@ function generateDeterministicMicansPatch(docFilename, docContent, discrepancies
 
   return {
     providerUsed: 'Motor Determinista Heurístico AST ($0 Compute)',
-    summary: `Se detectaron ${discrepancies.length} discrepancias y se generó una sección de referencia estructurada.`,
+    summary: `Se detectaron ${discrepancies.length} discrepancias reales y se estructuró su referencia.`,
     patches
   };
 }
@@ -534,7 +595,7 @@ async function run() {
     for (const e of entries) {
       const full = path.join(dir, e.name);
       if (e.isDirectory()) {
-        if (!['node_modules', '.git', 'dist', 'build', '.sphexn-storage', 'coverage'].includes(e.name)) {
+        if (!['node_modules', '.git', 'dist', 'build', '.sphexn-storage', '.sphexn', '.github', 'audits', 'coverage'].includes(e.name)) {
           walkDir(full);
         }
       } else if (/\.(?:js|cjs|mjs|ts|tsx|py|go)$/.test(e.name) && !e.name.includes('.test.') && !e.name.includes('.spec.')) {
