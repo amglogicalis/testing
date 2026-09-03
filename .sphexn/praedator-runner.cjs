@@ -50,7 +50,7 @@ for (const p of fallbackChain) {
   }
 }
 
-function httpsRequest(options, postData) {
+function httpsRequest(options, postData, timeoutMs = 12000) {
   return new Promise((resolve, reject) => {
     const req = https.request(options, (res) => {
       let data = '';
@@ -62,6 +62,9 @@ function httpsRequest(options, postData) {
           resolve({ status: res.statusCode, headers: res.headers, body: data });
         }
       });
+    });
+    req.setTimeout(timeoutMs, () => {
+      req.destroy(new Error(`Timeout (${timeoutMs}ms) en ${options.hostname}`));
     });
     req.on('error', reject);
     if (postData) req.write(typeof postData === 'string' ? postData : JSON.stringify(postData));
