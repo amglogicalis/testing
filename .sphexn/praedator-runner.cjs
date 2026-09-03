@@ -227,71 +227,126 @@ Responde ÚNICAMENTE con un objeto JSON válido con este esquema:
     try {
       console.log(`📡 Consultando modelo con ${provider.name} (${provider.model || provider.id})...`);
 
-      // GROQ CALL
+      // GROQ CALL (with candidate models)
       if (provider.id === 'groq' || provider.id.includes('groq')) {
-        const res = await httpsRequest({
-          hostname: 'api.groq.com',
-          path: '/openai/v1/chat/completions',
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${provider.apiKey}`
-          }
-        }, {
-          model: provider.model || 'llama-3.3-70b-versatile',
-          messages: [{ role: 'user', content: prompt }],
-          temperature: 0.1,
-          max_tokens: 800
-        });
+        const candidateModels = [provider.model || 'llama-3.1-8b-instant', 'llama-3.3-70b-versatile', 'llama3-70b-8192', 'llama3-8b-8192', 'mixtral-8x7b-32768'];
+        for (const candidate of candidateModels) {
+          try {
+            const res = await httpsRequest({
+              hostname: 'api.groq.com',
+              path: '/openai/v1/chat/completions',
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${provider.apiKey}`
+              }
+            }, {
+              model: candidate,
+              messages: [{ role: 'user', content: prompt }],
+              temperature: 0.1,
+              max_tokens: 800
+            });
 
-        if (res.status === 200 && res.body) {
-          const content = res.body.choices?.[0]?.message?.content || '{}';
-          const parsed = extractJSON(content) || {};
-          if (parsed.summary) {
-            return {
-              providerUsed: `${provider.name} (${provider.model || 'llama-3.3-70b'})`,
-              summary: parsed.summary,
-              verdict: parsed.verdict || (secrets.length > 0 ? 'SECURITY_BLOCK' : 'APPROVED'),
-              suggestions: parsed.suggestions || []
-            };
-          }
-        } else {
-          console.warn(`[Groq Cloud] HTTP ${res.status}: ${typeof res.body === 'object' ? JSON.stringify(res.body) : res.body}`);
+            if (res.status === 200 && res.body) {
+              const content = res.body.choices?.[0]?.message?.content || '{}';
+              const parsed = extractJSON(content) || {};
+              if (parsed.summary) {
+                return {
+                  providerUsed: `${provider.name} (${candidate})`,
+                  summary: parsed.summary,
+                  verdict: parsed.verdict || (secrets.length > 0 ? 'SECURITY_BLOCK' : 'APPROVED'),
+                  suggestions: parsed.suggestions || []
+                };
+              }
+            } else if (res.status !== 404) {
+              console.warn(`[Groq Cloud / ${candidate}] HTTP ${res.status}: ${typeof res.body === 'object' ? JSON.stringify(res.body) : res.body}`);
+              break;
+            }
+          } catch (e) {}
         }
       }
 
-      // OPENROUTER CALL
-      if (provider.id === 'openrouter' || provider.id.includes('openrouter')) {
-        const res = await httpsRequest({
-          hostname: 'openrouter.ai',
-          path: '/api/v1/chat/completions',
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${provider.apiKey}`,
-            'HTTP-Referer': 'https://github.com/amglogicalis/Sphexn',
-            'X-Title': 'Sphexn Praedator'
-          }
-        }, {
-          model: provider.model || 'meta-llama/llama-3.3-70b-instruct:free',
-          messages: [{ role: 'user', content: prompt }],
-          temperature: 0.1,
-          max_tokens: 800
-        });
+      // CEREBRAS CALL
+      if (provider.id === 'cerebras' || provider.id.includes('cerebras')) {
+        const candidateModels = ['llama3.1-70b', 'llama3.1-8b'];
+        for (const candidate of candidateModels) {
+          try {
+            const res = await httpsRequest({
+              hostname: 'api.cerebras.ai',
+              path: '/v1/chat/completions',
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${provider.apiKey}`
+              }
+            }, {
+              model: candidate,
+              messages: [{ role: 'user', content: prompt }],
+              temperature: 0.1,
+              max_tokens: 800
+            });
 
-        if (res.status === 200 && res.body) {
-          const content = res.body.choices?.[0]?.message?.content || '{}';
-          const parsed = extractJSON(content) || {};
-          if (parsed.summary) {
-            return {
-              providerUsed: `${provider.name} (${provider.model || 'llama-3.3-70b'})`,
-              summary: parsed.summary,
-              verdict: parsed.verdict || (secrets.length > 0 ? 'SECURITY_BLOCK' : 'APPROVED'),
-              suggestions: parsed.suggestions || []
-            };
-          }
-        } else {
-          console.warn(`[OpenRouter] HTTP ${res.status}: ${typeof res.body === 'object' ? JSON.stringify(res.body) : res.body}`);
+            if (res.status === 200 && res.body) {
+              const content = res.body.choices?.[0]?.message?.content || '{}';
+              const parsed = extractJSON(content) || {};
+              if (parsed.summary) {
+                return {
+                  providerUsed: `${provider.name} (${candidate})`,
+                  summary: parsed.summary,
+                  verdict: parsed.verdict || (secrets.length > 0 ? 'SECURITY_BLOCK' : 'APPROVED'),
+                  suggestions: parsed.suggestions || []
+                };
+              }
+            } else {
+              console.warn(`[Cerebras / ${candidate}] HTTP ${res.status}: ${typeof res.body === 'object' ? JSON.stringify(res.body) : res.body}`);
+            }
+          } catch (e) {}
+        }
+      }
+
+      // OPENROUTER CALL (with candidate free/paid models)
+      if (provider.id === 'openrouter' || provider.id.includes('openrouter')) {
+        const candidateModels = [
+          'qwen/qwen-2.5-coder-32b-instruct:free',
+          'deepseek/deepseek-r1:free',
+          'google/gemini-2.0-flash-exp:free',
+          'meta-llama/llama-3.3-70b-instruct'
+        ];
+        for (const candidate of candidateModels) {
+          try {
+            const res = await httpsRequest({
+              hostname: 'openrouter.ai',
+              path: '/api/v1/chat/completions',
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${provider.apiKey}`,
+                'HTTP-Referer': 'https://github.com/amglogicalis/Sphexn',
+                'X-Title': 'Sphexn Praedator'
+              }
+            }, {
+              model: candidate,
+              messages: [{ role: 'user', content: prompt }],
+              temperature: 0.1,
+              max_tokens: 800
+            });
+
+            if (res.status === 200 && res.body) {
+              const content = res.body.choices?.[0]?.message?.content || '{}';
+              const parsed = extractJSON(content) || {};
+              if (parsed.summary) {
+                return {
+                  providerUsed: `${provider.name} (${candidate})`,
+                  summary: parsed.summary,
+                  verdict: parsed.verdict || (secrets.length > 0 ? 'SECURITY_BLOCK' : 'APPROVED'),
+                  suggestions: parsed.suggestions || []
+                };
+              }
+            } else if (res.status !== 404) {
+              console.warn(`[OpenRouter / ${candidate}] HTTP ${res.status}: ${typeof res.body === 'object' ? JSON.stringify(res.body) : res.body}`);
+              break;
+            }
+          } catch (e) {}
         }
       }
 
