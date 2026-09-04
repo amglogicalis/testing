@@ -1,0 +1,49 @@
+{
+  "id": "nudus_1788520776321",
+  "species": "nudus",
+  "timestamp": "2026-09-04T11:19:36.321Z",
+  "mode": "heal",
+  "testCmd": "node test_math.js",
+  "repo": "amglogicalis/testing",
+  "branch": "test/nudus-auto-heal-demo",
+  "status": "HEALED",
+  "initialSuccess": false,
+  "finalSuccess": true,
+  "attemptsCount": 2,
+  "attempts": [
+    {
+      "attempt": 0,
+      "passed": false,
+      "exitCode": 1,
+      "durationMs": 31,
+      "errorSnippet": "node:assert:90\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n7 !== 3\n\n    at Object.<anonymous> (/home/runner/work/testing/testing/test_math.js:19:8)\n    at Module._compile (node:internal/modules/cjs/loader:1521:14)\n    at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)\n    at Module.load (node:internal/modules/cjs/loader:1266:32)\n    at Module._load (node:internal/modules/cjs/loader:1091:12)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)\n    at node:internal/main/run_main_module:28:49 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: 7,\n  expected: 3,\n  operator: 'strictEqual'\n}\n\nNode.js v20.20.2",
+      "patch": null
+    },
+    {
+      "attempt": 1,
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 28,
+      "errorSnippet": "",
+      "patch": {
+        "providerUsed": "OpenRouter AI (meta-llama/llama-3.3-70b-instruct)",
+        "filePath": "test_math.js",
+        "search": "function subtract(a, b) {\n    return a + b; // INTENTIONAL BUG FOR NUDUS TEST\n}",
+        "replace": "function subtract(a, b) {\n    return a - b;\n}",
+        "explanation": "El fallo se debe a que la función subtract está sumando en lugar de restar, por lo que se debe reemplazar el operador de suma por el de resta"
+      }
+    }
+  ],
+  "patchesApplied": [
+    {
+      "providerUsed": "OpenRouter AI (meta-llama/llama-3.3-70b-instruct)",
+      "filePath": "test_math.js",
+      "search": "function subtract(a, b) {\n    return a + b; // INTENTIONAL BUG FOR NUDUS TEST\n}",
+      "replace": "function subtract(a, b) {\n    return a - b;\n}",
+      "explanation": "El fallo se debe a que la función subtract está sumando en lugar de restar, por lo que se debe reemplazar el operador de suma por el de resta"
+    }
+  ],
+  "createdPrUrl": null,
+  "createdIssueUrl": null,
+  "summary": "Suite de pruebas auto-curada con éxito en 1 intento(s) mediante parche quirúrgico."
+}
