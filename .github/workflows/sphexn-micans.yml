@@ -1,0 +1,95 @@
+name: Sphexn Micans — Documentation Synchronizer
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Execution mode: drift, patch, or sync'
+        required: true
+        default: 'drift'
+      repo:
+        description: 'Target repository (owner/repo)'
+        required: true
+        default: ''
+      branch:
+        description: 'Target branch'
+        required: true
+        default: 'main'
+      doc_files:
+        description: 'Comma-separated doc files to audit'
+        required: true
+        default: 'README.md'
+      create_pr:
+        description: 'Whether to open an automated Pull Request in sync mode (true/false)'
+        required: false
+        default: 'true'
+      fallback_matrix:
+        description: 'JSON list of prioritized fallback model providers'
+        required: false
+        default: '[]'
+
+  push:
+    branches:
+      - '**'
+    paths:
+      - 'src/**'
+      - 'lib/**'
+      - 'bin/**'
+      - 'README.md'
+      - 'docs/**'
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: read
+
+jobs:
+  micans-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Restore Micans Signatures Cache
+        uses: actions/cache@v4
+        with:
+          path: audits/micans/cache
+          key: micans-cache-${{ github.repository }}-${{ github.sha }}
+          restore-keys: |
+            micans-cache-${{ github.repository }}-
+
+      - name: Run Sphexn Micans Synchronizer
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GH_MODELS_TOKEN: ${{ secrets.TOKEN_GH || secrets.GITHUB_TOKEN }}
+        run: |
+          MODE="${{ github.event_name == 'push' && 'sync' || inputs.mode }}"
+          REPO="${{ github.event_name == 'push' && github.repository || inputs.repo }}"
+          BRANCH="${{ github.event_name == 'push' && github.ref_name || inputs.branch }}"
+          DOCS="${{ inputs.doc_files || 'README.md' }}"
+          CREATE_PR="${{ inputs.create_pr != '' && inputs.create_pr || 'true' }}"
+          node .sphexn/micans-runner.cjs "$MODE" "$REPO" "$BRANCH" "$DOCS" '${{ inputs.fallback_matrix }}' "$CREATE_PR"
+
+      - name: Commit and Push Micans Audits
+        run: |
+          git config --global user.name "Sphexn Micans [Bot]"
+          git config --global user.email "bot@sphexn.terra"
+          if [ -d "audits" ]; then
+            git add audits/ || true
+            if ! git diff --staged --quiet; then
+              git commit -m "chore(micans): record code-to-docs synchronization audit" || true
+              git push origin "$BRANCH" || git push origin HEAD || echo "Audit committed or up-to-date"
+            fi
+          else
+            echo "No audits directory found to commit"
+          fi
