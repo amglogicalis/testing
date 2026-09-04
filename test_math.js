@@ -5,7 +5,7 @@ function add(a, b) {
 }
 
 function subtract(a, b) {
-    return a - b;
+    return a + b; // INTENTIONAL BUG FOR NUDUS TEST
 }
 
 function multiply(a, b) {
@@ -18,6 +18,3 @@ module.exports = { add, subtract, multiply };
 assert.strictEqual(add(2, 3), 5);
 assert.strictEqual(subtract(5, 2), 3);
 assert.strictEqual(multiply(4, 3), 12);
-// Auto-Nudus push trigger check: 1788519249699
-
-// Trigger Auto-Nudus on push: 1788519292612
