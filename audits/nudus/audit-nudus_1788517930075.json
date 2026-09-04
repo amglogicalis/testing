@@ -1,0 +1,27 @@
+{
+  "id": "nudus_1788517930075",
+  "species": "nudus",
+  "timestamp": "2026-09-04T10:32:10.075Z",
+  "mode": "heal",
+  "testCmd": "npm test",
+  "repo": "amglogicalis/testing",
+  "branch": "test/nudus-heal-eval",
+  "status": "UNHEALED",
+  "initialSuccess": false,
+  "finalSuccess": false,
+  "attemptsCount": 1,
+  "attempts": [
+    {
+      "attempt": 0,
+      "passed": false,
+      "exitCode": 254,
+      "durationMs": 110,
+      "errorSnippet": "npm error code ENOENT\nnpm error syscall open\nnpm error path /home/runner/work/testing/testing/package.json\nnpm error errno -2\nnpm error enoent Could not read package.json: Error: ENOENT: no such file or directory, open '/home/runner/work/testing/testing/package.json'\nnpm error enoent This is related to npm not being able to find a file.\nnpm error enoent\nnpm error A complete log of this run can be found in: /home/runner/.npm/_logs/2026-09-04T10_32_09_577Z-debug-0.log",
+      "patch": null
+    }
+  ],
+  "patchesApplied": [],
+  "createdPrUrl": null,
+  "createdIssueUrl": "https://github.com/amglogicalis/testing/issues/18",
+  "summary": "Los tests continúan fallando tras 1 intentos en bucle cerrado."
+}
