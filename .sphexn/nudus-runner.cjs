@@ -681,7 +681,11 @@ async function run() {
         const staged = cp.execSync('git diff --staged --name-only').toString().trim();
         if (staged) {
           cp.execSync(`git commit -m "fix(nudus): closed-loop self-healing test fix [skip ci]"`, { stdio: 'ignore' });
-          cp.execSync(`git push origin ${healBranch} --force`, { stdio: 'ignore' });
+          if (githubToken) {
+            cp.execSync(`git push https://x-access-token:${githubToken}@github.com/${targetRepo}.git ${healBranch} --force`, { stdio: 'ignore' });
+          } else {
+            cp.execSync(`git push origin ${healBranch} --force`, { stdio: 'ignore' });
+          }
 
           const prRes = await httpsRequest({
             hostname: 'api.github.com',
@@ -737,7 +741,11 @@ async function run() {
         const staged = cp.execSync('git diff --staged --name-only').toString().trim();
         if (staged) {
           cp.execSync(`git commit -m "fix(nudus): closed-loop self-healing test fix [skip ci]"`, { stdio: 'ignore' });
-          cp.execSync(`git push origin "${targetBranch}" || git push origin HEAD`, { stdio: 'ignore' });
+          if (githubToken) {
+            cp.execSync(`git push https://x-access-token:${githubToken}@github.com/${targetRepo}.git "${targetBranch}"`, { stdio: 'ignore' });
+          } else {
+            cp.execSync(`git push origin "${targetBranch}" || git push origin HEAD`, { stdio: 'ignore' });
+          }
           console.log(`✔ Commit de curación pusheado a ${targetBranch}.`);
         }
       } catch (err) {
