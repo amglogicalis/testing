@@ -1,0 +1,6 @@
+{
+  "testCmd": "node test_math.js",
+  "maxRetries": 3,
+  "createPr": false,
+  "openIssue": true
+}
