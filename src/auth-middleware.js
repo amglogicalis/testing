@@ -49,3 +49,4 @@ module.exports = {
   revokeExpiredSessions,
   generateSecureNonce
 };
+// Auto-Micans E2E verification trigger on main
