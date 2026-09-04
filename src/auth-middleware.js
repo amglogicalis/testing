@@ -37,9 +37,15 @@ function revokeExpiredSessions(sessionStore, maxAgeMs = 86400000) {
   return sessionStore.clear(maxAgeMs);
 }
 
+function generateSecureNonce(byteLength = 16) {
+  const crypto = require('crypto');
+  return crypto.randomBytes(byteLength).toString('hex');
+}
+
 module.exports = {
   sanitizeInput,
   validateBearerToken,
   scheduleSessionKeepAlive,
-  revokeExpiredSessions
+  revokeExpiredSessions,
+  generateSecureNonce
 };
