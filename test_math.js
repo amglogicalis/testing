@@ -5,7 +5,7 @@ function add(a, b) {
 }
 
 function subtract(a, b) {
-    return a + b; // INTENTIONAL BUG FOR NUDUS TEST
+    return a - b;
 }
 
 function multiply(a, b) {
