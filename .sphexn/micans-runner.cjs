@@ -645,9 +645,29 @@ async function run() {
     if (fs.existsSync(cacheFilePath)) {
       try {
         const cached = JSON.parse(fs.readFileSync(cacheFilePath, 'utf8'));
-        console.log(`⚡ [CACHE HIT] Documentación ${docRelPath} 100% al día en caché (Hash: ${docHash.substring(0, 12)}...)`);
-        auditResults.push(cached);
-        continue;
+        if (mode === 'dry-run' || cached.discrepanciesCount === 0) {
+          console.log(`⚡ [CACHE HIT] Documentación ${docRelPath} 100% al día en caché (Hash: ${docHash.substring(0, 12)}...)`);
+          auditResults.push(cached);
+          continue;
+        }
+        if (mode === 'sync' && cached.patches && cached.patches.length > 0) {
+          console.log(`⚡ [CACHE HIT] Aplicando parches en caché a ${docRelPath}...`);
+          let syncDocContent = docContent;
+          let applied = 0;
+          for (const patch of cached.patches) {
+            if (patch.search && patch.replace && syncDocContent.includes(patch.search)) {
+              syncDocContent = syncDocContent.replace(patch.search, patch.replace);
+              applied++;
+            }
+          }
+          if (applied > 0) {
+            fs.writeFileSync(docFullPath, syncDocContent, 'utf8');
+            console.log(`✔ Archivo ${docRelPath} actualizado quirúrgicamente desde caché (${applied} parche(s)).`);
+          }
+          cached.patchesApplied = applied;
+          auditResults.push(cached);
+          continue;
+        }
       } catch (e) {}
     }
 
@@ -684,7 +704,7 @@ async function run() {
       discrepanciesCount: discrepancies.length,
       discrepancies,
       patchesGenerated: (aiPatchResult.patches || []).length,
-      patchesApplied: appliedCount,
+      patchesApplied: mode === 'dry-run' ? 0 : appliedCount,
       providerUsed: aiPatchResult.providerUsed,
       summary: aiPatchResult.summary,
       patches: aiPatchResult.patches || [],
@@ -785,6 +805,10 @@ async function run() {
           }
         } catch (gitErr) {
           console.warn('Nota: Error en flujo Git PR:', gitErr.message);
+        } finally {
+          try {
+            cp.execSync(`git checkout ${targetBranch}`, { stdio: 'ignore' });
+          } catch (e) {}
         }
       } else {
         console.log(`[MODO SYNC-DIRECTO] Sincronizando y aplicando cambios directamente en la rama ${targetBranch} de ${targetRepo} (sin PR)...`);
