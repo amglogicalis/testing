@@ -1,0 +1,39 @@
+{
+  "docFile": "README.md",
+  "docHash": "804fcf005bd37d27f0604f369d2e008b02bb7ebfb07364c57ce729203959c986",
+  "discrepanciesCount": 4,
+  "discrepancies": [
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "ZENON_API_KEY",
+      "message": "La variable de entorno 'ZENON_API_KEY' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "COHERE_API_KEY",
+      "message": "La variable de entorno 'COHERE_API_KEY' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "SAMBA_API_KEY",
+      "message": "La variable de entorno 'SAMBA_API_KEY' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "GEMINI_API_BASE_URL",
+      "message": "La variable de entorno 'GEMINI_API_BASE_URL' es requerida por el código pero no se menciona en la documentación."
+    }
+  ],
+  "patchesGenerated": 1,
+  "patchesApplied": 0,
+  "providerUsed": "OpenRouter AI (meta-llama/llama-3.3-70b-instruct)",
+  "summary": "Se agregan variables de entorno requeridas por el código a la documentación. Se insertan las variables ZENON_API_KEY, COHERE_API_KEY, SAMBA_API_KEY y GEMINI_API_BASE_URL en la sección correspondiente.",
+  "patches": [
+    {
+      "section": "Variables de Entorno",
+      "search": "",
+      "replace": "## Variables de Entorno\nLas siguientes variables de entorno son requeridas por el código:\n* `ZENON_API_KEY`: Clave de API de Zenon\n* `COHERE_API_KEY`: Clave de API de Cohere\n* `SAMBA_API_KEY`: Clave de API de Samba\n* `GEMINI_API_BASE_URL`: URL base de la API de Gemini"
+    }
+  ],
+  "timestamp": "2026-09-03T12:30:27.356Z"
+}

@@ -1,0 +1,292 @@
+{
+  "docFile": "README.md",
+  "docHash": "b58c6b22f7f5114272aa571696adfba31b270f816653772fcee53507d98800d9",
+  "discrepanciesCount": 51,
+  "discrepancies": [
+    {
+      "type": "MISSING_FUNCTION_IN_DOCS",
+      "symbol": "walkDir",
+      "params": [
+        "dir"
+      ],
+      "file": ".sphexn/micans-runner.cjs",
+      "message": "La función exportada 'walkDir(dir)' en .sphexn/micans-runner.cjs no aparece documentada."
+    },
+    {
+      "type": "MISSING_FUNCTION_IN_DOCS",
+      "symbol": "exampleSync",
+      "params": [
+        "input"
+      ],
+      "file": ".sphexn/micans-runner.cjs",
+      "message": "La función exportada 'exampleSync(input)' en .sphexn/micans-runner.cjs no aparece documentada."
+    },
+    {
+      "type": "MISSING_FUNCTION_IN_DOCS",
+      "symbol": "addModel",
+      "params": [
+        "provider",
+        "modelObj"
+      ],
+      "file": "src/zenon.js",
+      "message": "La función exportada 'addModel(provider, modelObj)' en src/zenon.js no aparece documentada."
+    },
+    {
+      "type": "MISSING_FUNCTION_IN_DOCS",
+      "symbol": "getAt",
+      "params": [
+        "provider",
+        "index"
+      ],
+      "file": "src/zenon.js",
+      "message": "La función exportada 'getAt(provider, index)' en src/zenon.js no aparece documentada."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "GITHUB_TOKEN",
+      "message": "La variable de entorno 'GITHUB_TOKEN' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "GH_TOKEN",
+      "message": "La variable de entorno 'GH_TOKEN' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "TOKEN_GH",
+      "message": "La variable de entorno 'TOKEN_GH' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "GROQ_API_KEY",
+      "message": "La variable de entorno 'GROQ_API_KEY' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "CEREBRAS_API_KEY",
+      "message": "La variable de entorno 'CEREBRAS_API_KEY' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "OPENROUTER_API_KEY",
+      "message": "La variable de entorno 'OPENROUTER_API_KEY' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "GEMINI_API_KEY",
+      "message": "La variable de entorno 'GEMINI_API_KEY' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "GH_MODELS_TOKEN",
+      "message": "La variable de entorno 'GH_MODELS_TOKEN' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "PRAEDATOR_DIFF",
+      "message": "La variable de entorno 'PRAEDATOR_DIFF' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "GITHUB_REPOSITORY",
+      "message": "La variable de entorno 'GITHUB_REPOSITORY' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "GITHUB_REF_NAME",
+      "message": "La variable de entorno 'GITHUB_REF_NAME' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "INPUT_ZENON_API_KEY",
+      "message": "La variable de entorno 'INPUT_ZENON_API_KEY' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "ZENON_API_KEY",
+      "message": "La variable de entorno 'ZENON_API_KEY' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "INPUT_GROQ_API_KEY",
+      "message": "La variable de entorno 'INPUT_GROQ_API_KEY' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "INPUT_COHERE_API_KEY",
+      "message": "La variable de entorno 'INPUT_COHERE_API_KEY' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "COHERE_API_KEY",
+      "message": "La variable de entorno 'COHERE_API_KEY' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "INPUT_OPENROUTER_API_KEY",
+      "message": "La variable de entorno 'INPUT_OPENROUTER_API_KEY' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "INPUT_SAMBA_API_KEY",
+      "message": "La variable de entorno 'INPUT_SAMBA_API_KEY' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "SAMBA_API_KEY",
+      "message": "La variable de entorno 'SAMBA_API_KEY' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "INPUT_CEREBRAS_API_KEY",
+      "message": "La variable de entorno 'INPUT_CEREBRAS_API_KEY' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "INPUT_TOKEN_GH",
+      "message": "La variable de entorno 'INPUT_TOKEN_GH' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "INPUT_GH_MODELS_TOKEN",
+      "message": "La variable de entorno 'INPUT_GH_MODELS_TOKEN' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "INPUT_GITHUB_MODELS_TOKEN",
+      "message": "La variable de entorno 'INPUT_GITHUB_MODELS_TOKEN' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "GITHUB_MODELS_TOKEN",
+      "message": "La variable de entorno 'GITHUB_MODELS_TOKEN' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "GITHUB_ACTIONS",
+      "message": "La variable de entorno 'GITHUB_ACTIONS' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "GITHUB_EVENT_NAME",
+      "message": "La variable de entorno 'GITHUB_EVENT_NAME' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "GITHUB_BASE_REF",
+      "message": "La variable de entorno 'GITHUB_BASE_REF' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "GEMINI_API_BASE_URL",
+      "message": "La variable de entorno 'GEMINI_API_BASE_URL' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "GITHUB_EVENT_PATH",
+      "message": "La variable de entorno 'GITHUB_EVENT_PATH' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "GITHUB_API_URL",
+      "message": "La variable de entorno 'GITHUB_API_URL' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "INPUT_MODE",
+      "message": "La variable de entorno 'INPUT_MODE' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "INPUT_EXCLUDE",
+      "message": "La variable de entorno 'INPUT_EXCLUDE' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "INPUT_OBJECTIVE_FILE",
+      "message": "La variable de entorno 'INPUT_OBJECTIVE_FILE' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "INPUT_TOPIC",
+      "message": "La variable de entorno 'INPUT_TOPIC' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "INPUT_DIFF_RANGE",
+      "message": "La variable de entorno 'INPUT_DIFF_RANGE' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "INPUT_GITHUB_TOKEN",
+      "message": "La variable de entorno 'INPUT_GITHUB_TOKEN' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "INPUT_TEST_CMD",
+      "message": "La variable de entorno 'INPUT_TEST_CMD' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "INPUT_AUTO_FIX",
+      "message": "La variable de entorno 'INPUT_AUTO_FIX' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "INPUT_DEVOPS_PLAN_FILE",
+      "message": "La variable de entorno 'INPUT_DEVOPS_PLAN_FILE' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "INPUT_DEVOPS_TASK",
+      "message": "La variable de entorno 'INPUT_DEVOPS_TASK' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "INPUT_SELF_HEAL",
+      "message": "La variable de entorno 'INPUT_SELF_HEAL' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "INPUT_NOTIFY_EMAIL",
+      "message": "La variable de entorno 'INPUT_NOTIFY_EMAIL' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "INPUT_NOTIFY_WEBHOOK",
+      "message": "La variable de entorno 'INPUT_NOTIFY_WEBHOOK' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "INPUT_RESET_STATS",
+      "message": "La variable de entorno 'INPUT_RESET_STATS' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "GITHUB_STEP_SUMMARY",
+      "message": "La variable de entorno 'GITHUB_STEP_SUMMARY' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "INPUT_OBJECTIVE",
+      "message": "La variable de entorno 'INPUT_OBJECTIVE' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "INPUT_DOCS",
+      "message": "La variable de entorno 'INPUT_DOCS' es requerida por el código pero no se menciona en la documentación."
+    }
+  ],
+  "patchesGenerated": 1,
+  "patchesApplied": 1,
+  "providerUsed": "Motor Determinista Heurístico AST ($0 Compute)",
+  "summary": "Se detectaron 51 discrepancias y se generó una sección de referencia estructurada.",
+  "patches": [
+    {
+      "section": "Append API Reference",
+      "search": "- \\\u000balidateBearerToken(token)\\: Validates bearer authentication token format and minimum length.",
+      "replace": "- \\\u000balidateBearerToken(token)\\: Validates bearer authentication token format and minimum length.\n\n## 📝 API & Exports Reference (Sincronizado por Sphexn Micans)\n\n### Funciones y Métodos Exportados\n| Función | Argumentos | Archivo |\n|---|---|---|\n| `walkDir` | `dir` | `.sphexn/micans-runner.cjs` |\n| `exampleSync` | `input` | `.sphexn/micans-runner.cjs` |\n| `addModel` | `provider, modelObj` | `src/zenon.js` |\n| `getAt` | `provider, index` | `src/zenon.js` |\n\n### Variables de Entorno Requeridas\n- `GITHUB_TOKEN`: Variable de configuración activa en el código.\n- `GH_TOKEN`: Variable de configuración activa en el código.\n- `TOKEN_GH`: Variable de configuración activa en el código.\n- `GROQ_API_KEY`: Variable de configuración activa en el código.\n- `CEREBRAS_API_KEY`: Variable de configuración activa en el código.\n- `OPENROUTER_API_KEY`: Variable de configuración activa en el código.\n- `GEMINI_API_KEY`: Variable de configuración activa en el código.\n- `GH_MODELS_TOKEN`: Variable de configuración activa en el código.\n- `PRAEDATOR_DIFF`: Variable de configuración activa en el código.\n- `GITHUB_REPOSITORY`: Variable de configuración activa en el código.\n- `GITHUB_REF_NAME`: Variable de configuración activa en el código.\n- `INPUT_ZENON_API_KEY`: Variable de configuración activa en el código.\n- `ZENON_API_KEY`: Variable de configuración activa en el código.\n- `INPUT_GROQ_API_KEY`: Variable de configuración activa en el código.\n- `INPUT_COHERE_API_KEY`: Variable de configuración activa en el código.\n- `COHERE_API_KEY`: Variable de configuración activa en el código.\n- `INPUT_OPENROUTER_API_KEY`: Variable de configuración activa en el código.\n- `INPUT_SAMBA_API_KEY`: Variable de configuración activa en el código.\n- `SAMBA_API_KEY`: Variable de configuración activa en el código.\n- `INPUT_CEREBRAS_API_KEY`: Variable de configuración activa en el código.\n- `INPUT_TOKEN_GH`: Variable de configuración activa en el código.\n- `INPUT_GH_MODELS_TOKEN`: Variable de configuración activa en el código.\n- `INPUT_GITHUB_MODELS_TOKEN`: Variable de configuración activa en el código.\n- `GITHUB_MODELS_TOKEN`: Variable de configuración activa en el código.\n- `GITHUB_ACTIONS`: Variable de configuración activa en el código.\n- `GITHUB_EVENT_NAME`: Variable de configuración activa en el código.\n- `GITHUB_BASE_REF`: Variable de configuración activa en el código.\n- `GEMINI_API_BASE_URL`: Variable de configuración activa en el código.\n- `GITHUB_EVENT_PATH`: Variable de configuración activa en el código.\n- `GITHUB_API_URL`: Variable de configuración activa en el código.\n- `INPUT_MODE`: Variable de configuración activa en el código.\n- `INPUT_EXCLUDE`: Variable de configuración activa en el código.\n- `INPUT_OBJECTIVE_FILE`: Variable de configuración activa en el código.\n- `INPUT_TOPIC`: Variable de configuración activa en el código.\n- `INPUT_DIFF_RANGE`: Variable de configuración activa en el código.\n- `INPUT_GITHUB_TOKEN`: Variable de configuración activa en el código.\n- `INPUT_TEST_CMD`: Variable de configuración activa en el código.\n- `INPUT_AUTO_FIX`: Variable de configuración activa en el código.\n- `INPUT_DEVOPS_PLAN_FILE`: Variable de configuración activa en el código.\n- `INPUT_DEVOPS_TASK`: Variable de configuración activa en el código.\n- `INPUT_SELF_HEAL`: Variable de configuración activa en el código.\n- `INPUT_NOTIFY_EMAIL`: Variable de configuración activa en el código.\n- `INPUT_NOTIFY_WEBHOOK`: Variable de configuración activa en el código.\n- `INPUT_RESET_STATS`: Variable de configuración activa en el código.\n- `GITHUB_STEP_SUMMARY`: Variable de configuración activa en el código.\n- `INPUT_OBJECTIVE`: Variable de configuración activa en el código.\n- `INPUT_DOCS`: Variable de configuración activa en el código.\n"
+    }
+  ],
+  "timestamp": "2026-09-03T11:39:16.476Z"
+}

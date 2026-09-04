@@ -1,0 +1,53 @@
+{
+  "docFile": "README.md",
+  "docHash": "35dcd2f60fc55812c8f4fb4ba674dd136f452588014dd3aa255a855562efc5bc",
+  "discrepanciesCount": 5,
+  "discrepancies": [
+    {
+      "type": "MISSING_FUNCTION_IN_DOCS",
+      "symbol": "generateSecureNonce",
+      "params": [
+        "byteLength = 16"
+      ],
+      "file": "src/auth-middleware.js",
+      "message": "La función exportada 'generateSecureNonce(byteLength = 16)' en src/auth-middleware.js no aparece documentada."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "ZENON_API_KEY",
+      "message": "La variable de entorno 'ZENON_API_KEY' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "COHERE_API_KEY",
+      "message": "La variable de entorno 'COHERE_API_KEY' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "SAMBA_API_KEY",
+      "message": "La variable de entorno 'SAMBA_API_KEY' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "GEMINI_API_BASE_URL",
+      "message": "La variable de entorno 'GEMINI_API_BASE_URL' es requerida por el código pero no se menciona en la documentación."
+    }
+  ],
+  "patchesGenerated": 2,
+  "patchesApplied": 2,
+  "providerUsed": "OpenRouter AI (meta-llama/llama-3.3-70b-instruct)",
+  "summary": "Se agregan funciones y variables de entorno faltantes a la documentación. Se incluye la función generateSecureNonce y las variables de entorno ZENON_API_KEY, COHERE_API_KEY, SAMBA_API_KEY y GEMINI_API_BASE_URL.",
+  "patches": [
+    {
+      "section": "Funciones y Métodos Exportados",
+      "search": "| `revokeExpiredSessions` | `sessionStore, maxAgeMs = 86400000` | `src/auth-middleware.js` |",
+      "replace": "| `revokeExpiredSessions` | `sessionStore, maxAgeMs = 86400000` | `src/auth-middleware.js` |\n| `generateSecureNonce` | `byteLength = 16` | `src/auth-middleware.js` |"
+    },
+    {
+      "section": "Variables de Entorno",
+      "search": "## Security Middleware",
+      "replace": "## Security Middleware\n## Variables de Entorno\nLas siguientes variables de entorno son requeridas por el código:\n* `ZENON_API_KEY`\n* `COHERE_API_KEY`\n* `SAMBA_API_KEY`\n* `GEMINI_API_BASE_URL`"
+    }
+  ],
+  "timestamp": "2026-09-04T09:19:40.539Z"
+}

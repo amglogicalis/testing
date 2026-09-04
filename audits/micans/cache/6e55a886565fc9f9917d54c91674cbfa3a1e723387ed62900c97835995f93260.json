@@ -1,0 +1,57 @@
+{
+  "docFile": "README.md",
+  "docHash": "6e55a886565fc9f9917d54c91674cbfa3a1e723387ed62900c97835995f93260",
+  "discrepanciesCount": 4,
+  "discrepancies": [
+    {
+      "type": "MISSING_FUNCTION_IN_DOCS",
+      "symbol": "sanitizeInput",
+      "params": [
+        "input"
+      ],
+      "file": "src/auth-middleware.js",
+      "message": "La función exportada 'sanitizeInput(input)' en src/auth-middleware.js no aparece documentada."
+    },
+    {
+      "type": "MISSING_FUNCTION_IN_DOCS",
+      "symbol": "validateBearerToken",
+      "params": [
+        "authHeader"
+      ],
+      "file": "src/auth-middleware.js",
+      "message": "La función exportada 'validateBearerToken(authHeader)' en src/auth-middleware.js no aparece documentada."
+    },
+    {
+      "type": "MISSING_FUNCTION_IN_DOCS",
+      "symbol": "scheduleSessionKeepAlive",
+      "params": [
+        "refreshFn",
+        "intervalMs = 60000"
+      ],
+      "file": "src/auth-middleware.js",
+      "message": "La función exportada 'scheduleSessionKeepAlive(refreshFn, intervalMs = 60000)' en src/auth-middleware.js no aparece documentada."
+    },
+    {
+      "type": "MISSING_FUNCTION_IN_DOCS",
+      "symbol": "revokeExpiredSessions",
+      "params": [
+        "sessionStore",
+        "maxAgeMs = 86400000"
+      ],
+      "file": "src/auth-middleware.js",
+      "message": "La función exportada 'revokeExpiredSessions(sessionStore, maxAgeMs = 86400000)' en src/auth-middleware.js no aparece documentada."
+    }
+  ],
+  "patchesGenerated": 1,
+  "patchesApplied": 1,
+  "providerUsed": "Motor Determinista Heurístico AST ($0 Compute)",
+  "summary": "Se detectaron 4 discrepancias reales y se estructuró su referencia.",
+  "patches": [
+    {
+      "section": "Append API Reference",
+      "search": "- `INPUT_DOCS`: Variable de configuración activa en el código.",
+      "replace": "- `INPUT_DOCS`: Variable de configuración activa en el código.\n\n## 📝 API & Exports Reference (Sincronizado por Sphexn Micans)\n\n### Funciones y Métodos Exportados\n| Función | Argumentos | Archivo Origen |\n|---|---|---|\n| `sanitizeInput` | `input` | `src/auth-middleware.js` |\n| `validateBearerToken` | `authHeader` | `src/auth-middleware.js` |\n| `scheduleSessionKeepAlive` | `refreshFn, intervalMs = 60000` | `src/auth-middleware.js` |\n| `revokeExpiredSessions` | `sessionStore, maxAgeMs = 86400000` | `src/auth-middleware.js` |\n"
+    }
+  ],
+  "timestamp": "2026-09-03T12:21:53.738Z"
+}
