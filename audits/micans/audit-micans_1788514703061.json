@@ -1,0 +1,50 @@
+{
+  "id": "micans_1788514703061",
+  "mode": "sync",
+  "createPr": false,
+  "repo": "amglogicalis/testing",
+  "branch": "main",
+  "docsAudited": 1,
+  "results": [
+    {
+      "docFile": "README.md",
+      "docHash": "71bf5ee9e9a6baf52d03b3610278e796a692abe8e7caae345cff2d90a8a62827",
+      "discrepanciesCount": 4,
+      "discrepancies": [
+        {
+          "type": "MISSING_ENV_VAR",
+          "symbol": "ZENON_API_KEY",
+          "message": "La variable de entorno 'ZENON_API_KEY' es requerida por el código pero no se menciona en la documentación."
+        },
+        {
+          "type": "MISSING_ENV_VAR",
+          "symbol": "COHERE_API_KEY",
+          "message": "La variable de entorno 'COHERE_API_KEY' es requerida por el código pero no se menciona en la documentación."
+        },
+        {
+          "type": "MISSING_ENV_VAR",
+          "symbol": "SAMBA_API_KEY",
+          "message": "La variable de entorno 'SAMBA_API_KEY' es requerida por el código pero no se menciona en la documentación."
+        },
+        {
+          "type": "MISSING_ENV_VAR",
+          "symbol": "GEMINI_API_BASE_URL",
+          "message": "La variable de entorno 'GEMINI_API_BASE_URL' es requerida por el código pero no se menciona en la documentación."
+        }
+      ],
+      "patchesGenerated": 1,
+      "patchesApplied": 1,
+      "providerUsed": "OpenRouter AI (meta-llama/llama-3.3-70b-instruct)",
+      "summary": "Se agregan variables de entorno requeridas por el código a la documentación. Se mencionan las variables ZENON_API_KEY, COHERE_API_KEY, SAMBA_API_KEY y GEMINI_API_BASE_URL en la sección de seguridad.",
+      "patches": [
+        {
+          "section": "Security Middleware",
+          "search": "## Security MiddlewareSecurity verification modules for Sphexn precision testing.",
+          "replace": "## Security Middleware\nSecurity verification modules for Sphexn precision testing.\n\nLas siguientes variables de entorno son requeridas por el código:\n* ZENON_API_KEY\n* COHERE_API_KEY\n* SAMBA_API_KEY\n* GEMINI_API_BASE_URL"
+        }
+      ],
+      "timestamp": "2026-09-04T09:21:29.198Z"
+    }
+  ],
+  "timestamp": "2026-09-04T09:38:23.061Z"
+}
