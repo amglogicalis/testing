@@ -8,7 +8,7 @@ function subtract(a, b) {
 
 // BUG INTENCIONADO PARA LA PRUEBA DE FUEGO DE NUDUS
 function multiply(a, b) {
-  return a + b; // Error: debe ser a * b
+  return a * b;
 }
 
 function divide(a, b) {
