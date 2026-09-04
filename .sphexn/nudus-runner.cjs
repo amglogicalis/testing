@@ -169,7 +169,7 @@ function isolateFailingContext(errorOutput) {
   // Regex patterns across JavaScript, TypeScript, Python, Rust, Go
   const patterns = [
     // Node.js/Jest/Vitest: at foo (/path/to/src/calc.js:14:5) or at /path/to/src/calc.js:14:5
-    /(?:at\s+(?:.*?\s+)?\(?|\s+)([a-zA-Z0-9_./\\-]+\.(?:js|mjs|cjs|ts|tsx|py|go|rs)):(\d+):(\d+)\)?/,
+    /(?:at\s+(?:.*?\s+)?\(?|\s+)([a-zA-Z]:[\\/][a-zA-Z0-9_./\\-]+\.(?:js|mjs|cjs|ts|tsx|py|go|rs)|[a-zA-Z0-9_./\\-]+\.(?:js|mjs|cjs|ts|tsx|py|go|rs)):(\d+):(\d+)\)?/,
     // Python: File "src/calc.py", line 14, in foo
     /File\s+["']([^"']+\.(?:py|js|ts))["'],\s+line\s+(\d+)/,
     // Rust/Cargo: --> src/main.rs:14:5
@@ -208,6 +208,37 @@ function isolateFailingContext(errorOutput) {
     }
   }
 
+  // If candidate is a test file, inspect its local imports for the underlying source code file
+  for (const c of [...candidates]) {
+    if (c.isTestFile && fs.existsSync(c.filePath)) {
+      try {
+        const testContent = fs.readFileSync(c.filePath, 'utf8');
+        const importRegex = /(?:require\(['"](\.[^'"]+)['"]\)|from\s+['"](\.[^'"]+)['"])/g;
+        let im;
+        while ((im = importRegex.exec(testContent)) !== null) {
+          const relImport = im[1] || im[2];
+          const resolvedPath = path.resolve(path.dirname(c.filePath), relImport);
+          const possibleExts = ['', '.js', '.ts', '.mjs', '.cjs'];
+          for (const ext of possibleExts) {
+            const p = resolvedPath + ext;
+            if (fs.existsSync(p) && !fs.statSync(p).isDirectory()) {
+              const relToRoot = path.relative(process.cwd(), p).replace(/\\/g, '/');
+              if (!relToRoot.includes('node_modules') && !candidates.some(cand => cand.filePath === relToRoot)) {
+                candidates.push({
+                  filePath: relToRoot,
+                  line: 1,
+                  isTestFile: false,
+                  rawLine: `Imported by ${c.filePath}`
+                });
+              }
+              break;
+            }
+          }
+        }
+      } catch (err) {}
+    }
+  }
+
   // Prioritize source code files over test files for healing, unless only test files failed
   const sourceFiles = candidates.filter(c => !c.isTestFile);
   const testFiles = candidates.filter(c => c.isTestFile);
@@ -239,10 +270,21 @@ async function generateSurgicalPatch(targetFile, errorContext, failureHistory) {
     contextSnippet = fileLines.slice(start, end).map((l, i) => `${start + i + 1}: ${l}`).join('\n');
   }
 
+  let testFileSnippet = '';
+  if (errorContext.allCandidates) {
+    const testCandidate = errorContext.allCandidates.find(c => c.isTestFile);
+    if (testCandidate && fs.existsSync(testCandidate.filePath)) {
+      try {
+        testFileSnippet = `\n=== FAILING TEST CODE (${testCandidate.filePath}) ===\n` + fs.readFileSync(testCandidate.filePath, 'utf8').slice(0, 2000);
+      } catch {}
+    }
+  }
+
   const prompt = `A software test failed in a project. Your job is to fix the underlying bug by providing an inviolable surgical SEARCH/REPLACE patch block.
 
 === TEST FAILURE ERROR OUTPUT & STACK TRACE ===
 ${errorContext.snippet.slice(0, 2500)}
+${testFileSnippet}
 
 === TARGET FILE TO HEAL: ${targetFile} ===
 ${contextSnippet.slice(0, 5000)}
