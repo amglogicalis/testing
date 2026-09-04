@@ -1,0 +1,39 @@
+{
+  "docFile": "README.md",
+  "docHash": "9929800eedc06da97d54d931a97f8029b957d717cab55e498fe5664747aa42c2",
+  "discrepanciesCount": 4,
+  "discrepancies": [
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "ZENON_API_KEY",
+      "message": "La variable de entorno 'ZENON_API_KEY' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "COHERE_API_KEY",
+      "message": "La variable de entorno 'COHERE_API_KEY' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "SAMBA_API_KEY",
+      "message": "La variable de entorno 'SAMBA_API_KEY' es requerida por el código pero no se menciona en la documentación."
+    },
+    {
+      "type": "MISSING_ENV_VAR",
+      "symbol": "GEMINI_API_BASE_URL",
+      "message": "La variable de entorno 'GEMINI_API_BASE_URL' es requerida por el código pero no se menciona en la documentación."
+    }
+  ],
+  "patchesGenerated": 1,
+  "patchesApplied": 0,
+  "providerUsed": "OpenRouter AI (meta-llama/llama-3.3-70b-instruct)",
+  "summary": "Se agregan variables de entorno requeridas por el código a la documentación. Se actualiza la sección de seguridad middleware para incluir las variables de entorno necesarias.",
+  "patches": [
+    {
+      "section": "Security Middleware",
+      "search": "## Security Middleware\nSecurity verification modules for Sphexn precision testing.",
+      "replace": "## Security Middleware\nSecurity verification modules for Sphexn precision testing.\n\nLas siguientes variables de entorno son requeridas por el código:\n* `ZENON_API_KEY`: Clave de API para Zenon\n* `COHERE_API_KEY`: Clave de API para Cohere\n* `SAMBA_API_KEY`: Clave de API para Samba\n* `GEMINI_API_BASE_URL`: URL base para la API de Gemini"
+    }
+  ],
+  "timestamp": "2026-09-04T10:03:19.556Z"
+}
