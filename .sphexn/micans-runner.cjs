@@ -14,7 +14,9 @@ const crypto = require('crypto');
 const cp = require('child_process');
 
 // CLI Parameter Parsing
-const mode = process.argv[2] || 'drift'; // 'drift', 'patch', 'sync'
+const rawMode = (process.argv[2] || 'dry-run').toLowerCase();
+const mode = (rawMode === 'drift' || rawMode === 'dry-run') ? 'dry-run' : 'sync';
+const shouldCreatePr = process.argv[7] !== 'false' && process.env.INPUT_CREATE_PR !== 'false'; // 'drift', 'patch', 'sync'
 const targetRepo = process.argv[3] || 'Local Workspace';
 const targetBranch = process.argv[4] || 'main';
 const docFilesRaw = process.argv[5] || 'README.md';
@@ -693,7 +695,7 @@ async function run() {
     fs.writeFileSync(cacheFilePath, JSON.stringify(docReport, null, 2));
 
     // In sync mode, write back the updated documentation file
-    if ((mode === 'sync' || mode === 'patch') && appliedCount > 0) {
+    if (mode === 'sync' && appliedCount > 0) {
       fs.writeFileSync(docFullPath, updatedDocContent, 'utf8');
       console.log(`✔ Archivo ${docRelPath} actualizado quirúrgicamente con ${appliedCount} parche(s).`);
     }
@@ -707,6 +709,7 @@ async function run() {
   const finalReport = {
     id: auditId,
     mode,
+    createPr: shouldCreatePr,
     repo: targetRepo,
     branch: targetBranch,
     docsAudited: auditResults.length,

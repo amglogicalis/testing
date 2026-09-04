@@ -19,6 +19,10 @@ on:
         description: 'Comma-separated doc files to audit'
         required: true
         default: 'README.md'
+      create_pr:
+        description: 'Whether to open an automated Pull Request in sync mode (true/false)'
+        required: false
+        default: 'true'
       fallback_matrix:
         description: 'JSON list of prioritized fallback model providers'
         required: false
@@ -72,7 +76,8 @@ jobs:
           REPO="${{ github.event_name == 'push' && github.repository || inputs.repo }}"
           BRANCH="${{ github.event_name == 'push' && 'main' || inputs.branch }}"
           DOCS="${{ inputs.doc_files || 'README.md' }}"
-          node .sphexn/micans-runner.cjs "$MODE" "$REPO" "$BRANCH" "$DOCS" '${{ inputs.fallback_matrix }}'
+          CREATE_PR="${{ inputs.create_pr != '' && inputs.create_pr || 'true' }}"
+          node .sphexn/micans-runner.cjs "$MODE" "$REPO" "$BRANCH" "$DOCS" '${{ inputs.fallback_matrix }}' "$CREATE_PR"
 
       - name: Commit and Push Micans Audits
         run: |
