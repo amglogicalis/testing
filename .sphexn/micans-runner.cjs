@@ -739,6 +739,11 @@ async function run() {
           for (const doc of docFilePaths) {
             cp.execSync(`git add ${doc}`, { stdio: 'ignore' });
           }
+          const isPrStaged = cp.execSync('git diff --staged --name-only').toString().trim();
+          if (!isPrStaged) {
+            console.log(`✔ La documentación ya se encuentra al día; no se requiere abrir Pull Request.`);
+            return;
+          }
           cp.execSync(`git commit -m "chore(docs): sync documentation with latest code signatures via Sphexn Micans"`, { stdio: 'ignore' });
           if (githubToken) {
             cp.execSync(`git push https://x-access-token:${githubToken}@github.com/${targetRepo}.git ${syncBranch} --force`, { stdio: 'ignore' });
@@ -789,13 +794,18 @@ async function run() {
           for (const doc of docFilePaths) {
             cp.execSync(`git add ${doc}`, { stdio: 'ignore' });
           }
-          cp.execSync(`git commit -m "chore(docs): synchronize documentation directly via Sphexn Micans [skip ci]"`, { stdio: 'ignore' });
-          if (githubToken) {
-            cp.execSync(`git push https://x-access-token:${githubToken}@github.com/${targetRepo}.git ${targetBranch}`, { stdio: 'ignore' });
+          const isStaged = cp.execSync('git diff --staged --name-only').toString().trim();
+          if (!isStaged) {
+            console.log(`✔ La documentación ya se encuentra 100% sincronizada en ${targetBranch}; nada que commitear.`);
           } else {
-            cp.execSync(`git push origin ${targetBranch}`, { stdio: 'ignore' });
+            cp.execSync(`git commit -m "chore(docs): synchronize documentation directly via Sphexn Micans [skip ci]"`, { stdio: 'ignore' });
+            if (githubToken) {
+              cp.execSync(`git push https://x-access-token:${githubToken}@github.com/${targetRepo}.git ${targetBranch}`, { stdio: 'ignore' });
+            } else {
+              cp.execSync(`git push origin ${targetBranch}`, { stdio: 'ignore' });
+            }
+            console.log(`✔ Cambios aplicados y pusheados directamente a ${targetBranch} sin Pull Request.`);
           }
-          console.log(`✔ Cambios aplicados y pusheados directamente a ${targetBranch} sin Pull Request.`);
         } catch (directErr) {
           console.warn('Nota en sincronización directa:', directErr.message);
         }
