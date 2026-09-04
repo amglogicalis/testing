@@ -21,16 +21,48 @@ const https = require('https');
 const crypto = require('crypto');
 const cp = require('child_process');
 
-// CLI Parameters
-const rawMode = (process.argv[2] || 'heal').toLowerCase();
+// ----------------------------------------------------
+// Configuration & Multi-Command Normalization
+// ----------------------------------------------------
+function normalizeTestCommands(raw) {
+  if (!raw) return 'npm test';
+  const parts = raw
+    .split(/\r?\n|&&/)
+    .map(s => s.trim())
+    .filter(Boolean);
+  return parts.length > 1 ? parts.join(' && ') : raw.trim();
+}
+
+let fileConfig = {};
+if (fs.existsSync('.sphexn/nudus.json')) {
+  try {
+    fileConfig = JSON.parse(fs.readFileSync('.sphexn/nudus.json', 'utf8'));
+  } catch {}
+}
+
+const rawMode = (process.env.MODE || process.argv[2] || 'heal').toLowerCase();
 const mode = (rawMode === 'diagnose' || rawMode === 'dry-run') ? 'dry-run' : 'heal';
-const testCmd = process.argv[3] || process.env.TEST_CMD || detectTestCommand();
-const maxRetries = Math.min(5, Math.max(1, parseInt(process.argv[4] || process.env.MAX_RETRIES || '3', 10)));
-const targetRepo = process.argv[5] || process.env.GITHUB_REPOSITORY || '';
-const targetBranch = process.argv[6] || process.env.BRANCH || 'main';
-const shouldCreatePr = process.argv[7] === 'true' || process.env.CREATE_PR === 'true';
-const shouldOpenIssue = process.argv[8] !== 'false' && process.env.OPEN_ISSUE !== 'false';
-const fallbackConfigRaw = process.argv[9] || '[]';
+
+const rawTestCmd = (process.env.TEST_CMD && process.env.TEST_CMD.trim() !== '')
+  ? process.env.TEST_CMD
+  : ((process.argv[3] && process.argv[3].trim() !== '' && process.argv[3] !== 'undefined')
+      ? process.argv[3]
+      : (fileConfig.testCmd || detectTestCommand()));
+const testCmd = normalizeTestCommands(rawTestCmd);
+
+const maxRetries = fileConfig.maxRetries || Math.min(5, Math.max(1, parseInt(process.env.MAX_RETRIES || process.argv[4] || '3', 10)));
+const targetRepo = process.env.REPO || process.argv[5] || process.env.GITHUB_REPOSITORY || '';
+const targetBranch = process.env.BRANCH || process.argv[6] || 'main';
+
+const shouldCreatePr = fileConfig.createPr !== undefined 
+  ? Boolean(fileConfig.createPr) 
+  : ((process.env.CREATE_PR !== undefined && process.env.CREATE_PR !== '') ? process.env.CREATE_PR === 'true' : (process.argv[7] === 'true'));
+
+const shouldOpenIssue = fileConfig.openIssue !== undefined 
+  ? Boolean(fileConfig.openIssue) 
+  : ((process.env.OPEN_ISSUE !== undefined && process.env.OPEN_ISSUE !== '') ? process.env.OPEN_ISSUE !== 'false' : (process.argv[8] !== 'false'));
+
+const fallbackConfigRaw = process.env.FALLBACK_MATRIX || process.argv[9] || '[]';
 const githubToken = process.env.GH_MODELS_TOKEN || process.env.TOKEN_GH || process.env.GITHUB_TOKEN || process.env.GH_TOKEN || '';
 
 let fallbackChain = [];
@@ -702,8 +734,16 @@ async function run() {
         console.warn('Nota al commitear en git:', err.message);
       }
     }
-  } else if (!finalSuccess && mode !== 'dry-run' && shouldOpenIssue && targetRepo && githubToken) {
-    // Open Failure Diagnostic Issue on GitHub
+  } else if (!finalSuccess && mode !== 'dry-run') {
+    // 1. Rollback intermediate trial patches to leave working directory 100% clean
+    try {
+      cp.execSync('git checkout -- .', { stdio: 'ignore' });
+      console.log('🔄 Revertidos los parches de prueba no exitosos para mantener el código fuente intacto.');
+    } catch {}
+
+    // 2. Open Failure Diagnostic Issue on GitHub if requested
+    if (shouldOpenIssue && targetRepo && githubToken) {
+
     console.log(`🚨 Tests no curados tras ${maxRetries} intentos. Abriendo Issue de diagnóstico en ${targetRepo}...`);
     try {
       const issueRes = await httpsRequest({
@@ -744,6 +784,7 @@ async function run() {
       }
     } catch (issueErr) {
       console.warn('Nota al abrir Issue de fallo:', issueErr.message);
+    }
     }
   }
 
