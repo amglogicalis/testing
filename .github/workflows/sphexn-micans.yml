@@ -29,7 +29,8 @@ on:
         default: '[]'
 
   push:
-    branches: [main]
+    branches:
+      - '**'
     paths:
       - 'src/**'
       - 'lib/**'
@@ -74,7 +75,7 @@ jobs:
         run: |
           MODE="${{ github.event_name == 'push' && 'sync' || inputs.mode }}"
           REPO="${{ github.event_name == 'push' && github.repository || inputs.repo }}"
-          BRANCH="${{ github.event_name == 'push' && 'main' || inputs.branch }}"
+          BRANCH="${{ github.event_name == 'push' && github.ref_name || inputs.branch }}"
           DOCS="${{ inputs.doc_files || 'README.md' }}"
           CREATE_PR="${{ inputs.create_pr != '' && inputs.create_pr || 'true' }}"
           node .sphexn/micans-runner.cjs "$MODE" "$REPO" "$BRANCH" "$DOCS" '${{ inputs.fallback_matrix }}' "$CREATE_PR"
@@ -87,7 +88,7 @@ jobs:
             git add audits/ || true
             if ! git diff --staged --quiet; then
               git commit -m "chore(micans): record code-to-docs synchronization audit" || true
-              git push origin main || echo "Audit committed or up-to-date"
+              git push origin "$BRANCH" || git push origin HEAD || echo "Audit committed or up-to-date"
             fi
           else
             echo "No audits directory found to commit"
