@@ -41,6 +41,9 @@ on:
       - '**'
     paths:
       - 'src/**'
+      - '*.js'
+      - '*.py'
+      - '*.ts'
       - '.sphexn/**'
       - 'lib/**'
       - 'test/**'
