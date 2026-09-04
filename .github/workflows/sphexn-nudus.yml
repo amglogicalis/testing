@@ -41,6 +41,7 @@ on:
       - '**'
     paths:
       - 'src/**'
+      - '.sphexn/**'
       - 'lib/**'
       - 'test/**'
       - 'tests/**'
