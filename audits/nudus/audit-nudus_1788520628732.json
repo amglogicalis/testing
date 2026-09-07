@@ -1,0 +1,27 @@
+{
+  "id": "nudus_1788520628732",
+  "species": "nudus",
+  "timestamp": "2026-09-04T11:17:08.736Z",
+  "mode": "dry-run",
+  "testCmd": "node test_math.js && node test_auth.js",
+  "repo": "amglogicalis/testing",
+  "branch": "main",
+  "status": "DRY_RUN_DIAGNOSED",
+  "initialSuccess": false,
+  "finalSuccess": false,
+  "attemptsCount": 1,
+  "attempts": [
+    {
+      "attempt": 0,
+      "passed": false,
+      "exitCode": 1,
+      "durationMs": 999,
+      "errorSnippet": "En l�nea: 1 Car�cter: 19\r\n+ node test_math.js && node test_auth.js\r\n+                   ~~\r\nEl token '&&' no es un separador de instrucciones v�lido en esta versi�n.\r\n    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException\r\n    + FullyQualifiedErrorId : InvalidEndOfLine",
+      "patch": null
+    }
+  ],
+  "patchesApplied": [],
+  "createdPrUrl": null,
+  "createdIssueUrl": null,
+  "summary": "Los tests continúan fallando tras 1 intentos en bucle cerrado."
+}
