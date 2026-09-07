@@ -225,8 +225,22 @@ function parsePlanMarkdown(rawMarkdown) {
     email: '',
     webhook: '',
     title: 'Sphexn Rex — DevOps Execution Plan',
-    description: ''
+    description: '',
+    selfHeal: undefined,
+    maxRetries: undefined
   };
+
+  const autoHealMatch = rawMarkdown.match(/^##?\s*(?:Auto-Healing|AutoHeal|Auto-Heal)[^\n]*\n([^\n]+)/im);
+  if (autoHealMatch) {
+    const val = autoHealMatch[1].trim().toLowerCase();
+    settings.selfHeal = !/^(?:false|no|0|off|desactivado)$/i.test(val);
+  }
+
+  const retriesMatch = rawMarkdown.match(/^##?\s*(?:Reintentos|Retries|Max-Retries)[^\n]*\n([^\n]+)/im);
+  if (retriesMatch) {
+    const num = parseInt(retriesMatch[1].trim(), 10);
+    if (!isNaN(num) && num >= 0) settings.maxRetries = num;
+  }
 
   const emailMatch = rawMarkdown.match(/^##?\s*(?:Destinatario|Email|Notify-Email)[^\n]*\n([^\n]+)/im);
   if (emailMatch) settings.email = emailMatch[1].trim().replace(/^[-*]\s*/, '');
@@ -251,6 +265,8 @@ function parsePlanMarkdown(rawMarkdown) {
     let envVars = {};
     let timeout = 180000;
     let continueOnError = false;
+    let taskSelfHeal = undefined;
+    let taskMaxRetries = undefined;
 
     for (const line of lines.slice(1)) {
       const l = line.trim();
@@ -261,6 +277,12 @@ function parsePlanMarkdown(rawMarkdown) {
       } else if (/^-\s*\*{0,2}Depende de\*{0,2}\s*:/i.test(l)) {
         const deps = l.replace(/^-\s*\*{0,2}Depende de\*{0,2}\s*:\s*/i, '');
         dependsOn = deps.split(',').map(d => d.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')).filter(Boolean);
+      } else if (/^-\s*\*{0,2}Auto-Healing\*{0,2}\s*:/i.test(l)) {
+        const val = l.replace(/^-\s*\*{0,2}Auto-Healing\*{0,2}\s*:\s*/i, '').trim();
+        taskSelfHeal = !/^(?:false|no|0|off|desactivado)$/i.test(val);
+      } else if (/^-\s*\*{0,2}Reintentos\*{0,2}\s*:/i.test(l)) {
+        const r = parseInt(l.replace(/^-\s*\*{0,2}Reintentos\*{0,2}\s*:\s*/i, '').trim(), 10);
+        if (!isNaN(r) && r >= 0) taskMaxRetries = r;
       } else if (/^-\s*\*{0,2}Timeout\*{0,2}\s*:/i.test(l)) {
         const t = parseInt(l.replace(/^-\s*\*{0,2}Timeout\*{0,2}\s*:\s*/i, ''), 10);
         if (!isNaN(t)) timeout = t * 1000;
@@ -285,6 +307,8 @@ function parsePlanMarkdown(rawMarkdown) {
         dependsOn,
         timeout,
         continueOnError,
+        selfHeal: taskSelfHeal,
+        maxRetries: taskMaxRetries,
         env: envVars
       });
     }
@@ -803,7 +827,10 @@ admin@terra-ecosystem.com
     let execRes = executeScriptSubprocess(scriptPath, task.env, task.timeout);
     let isHealed = false;
 
-    while (!execRes.success && attempt < maxRetries && selfHealEnabled) {
+    const effectiveSelfHeal = task.selfHeal !== undefined ? task.selfHeal : (settings.selfHeal !== undefined ? settings.selfHeal : selfHealEnabled);
+    const effectiveMaxRetries = task.maxRetries !== undefined ? task.maxRetries : (settings.maxRetries !== undefined ? settings.maxRetries : maxRetries);
+
+    while (!execRes.success && attempt < effectiveMaxRetries && effectiveSelfHeal) {
       attempt++;
       console.log(`  ⚠️ Fallo en intento ${attempt - 1}: activando Auto-Healing con IA (Intento ${attempt}/${maxRetries})...`);
       const currentCode = fs.existsSync(absScriptPath) ? fs.readFileSync(absScriptPath, 'utf8') : '';
