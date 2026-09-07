@@ -41,12 +41,16 @@ on:
       - '**'
     paths:
       - 'src/**'
-      - '*.js'
-      - '*.py'
-      - '*.ts'
-      - '*.json'
-      - '.sphexn/**'
       - 'lib/**'
+      - 'console/**'
+      - 'test/**'
+      - 'tests/**'
+      - '.sphexn/**'
+      - '**/*.js'
+      - '**/*.ts'
+      - '**/*.py'
+      - '**/*.json'
+      - 'package.json'
 
 permissions:
   contents: write
