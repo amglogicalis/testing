@@ -397,7 +397,8 @@ Do not include markdown code block backticks outside the JSON.`;
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${provider.apiKey}`
+                'Authorization': `Bearer ${provider.apiKey}`,
+                'User-Agent': 'Sphexn-Obscurus'
               }
             }, {
               model: m,
@@ -578,6 +579,18 @@ function generateDeterministicHeuristicFix(auditResult) {
         replace: replacement,
         explanation: `Saneamiento determinista de placeholder perezoso: "${f.identifier}"`
       };
+    } else if (f.type === 'hallucinated_package' && f.identifier) {
+      const lines = content.split('\n');
+      const targetLine = lines[f.line - 1];
+      if (targetLine && targetLine.includes(f.identifier)) {
+        return {
+          providerUsed: 'Motor Heurístico Determinista Obscurus ($0 Compute)',
+          filePath,
+          search: targetLine,
+          replace: `// [SPHEXN OBSCURUS] Removida dependencia alucinada: ${f.identifier}`,
+          explanation: `Saneamiento determinista de paquete fantasma no declarado: "${f.identifier}"`
+        };
+      }
     }
   }
   return null;
