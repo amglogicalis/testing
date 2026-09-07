@@ -17,6 +17,8 @@ const path = require('path');
 const cp = require('child_process');
 const https = require('https');
 const http = require('http');
+const net = require('net');
+const tls = require('tls');
 const vm = require('vm');
 
 // ----------------------------------------------------
@@ -98,6 +100,7 @@ function httpsRequest(options, postData, timeoutMs = 15000) {
 async function callAiWithFallback(systemPrompt, userPrompt) {
   for (const provider of fallbackChain) {
     if (!provider.apiKey && !provider.id.includes('custom')) continue;
+    if (provider.apiKey === 'disabled' || provider.apiKey === 'none' || provider.apiKey === 'off') continue;
 
     try {
       // GROQ
@@ -657,6 +660,240 @@ ${aiSummary}
 // ----------------------------------------------------
 // 6. Notification Dispatchers (Webhook & Email)
 // ----------------------------------------------------
+async function sendSmtpEmail({ host, port, user, pass, from, to, subject, html, timeout = 15000 }) {
+  return new Promise((resolve, reject) => {
+    const isDirectTls = Number(port) === 465;
+    let socket;
+    let buffer = '';
+    let step = 'CONNECT';
+
+    function send(cmd) {
+      if (socket && !socket.destroyed) socket.write(cmd + '\r\n');
+    }
+
+    const timer = setTimeout(() => {
+      if (socket) socket.destroy();
+      reject(new Error(`SMTP connection timed out after ${timeout}ms`));
+    }, timeout);
+
+    const onConnect = () => {};
+
+    if (isDirectTls) {
+      socket = tls.connect({ host, port: Number(port), rejectUnauthorized: false }, onConnect);
+    } else {
+      socket = net.connect({ host, port: Number(port) }, onConnect);
+    }
+
+    socket.setEncoding('utf8');
+
+    socket.on('data', (data) => {
+      buffer += data;
+      const lines = buffer.split('\r\n');
+      buffer = lines.pop();
+
+      for (const line of lines) {
+        if (!line) continue;
+        const code = parseInt(line.slice(0, 3), 10);
+        const isLastLine = line.charAt(3) === ' ';
+
+        if (!isLastLine && line.length >= 4 && line.charAt(3) === '-') {
+          continue; // Multiline response continuation
+        }
+
+        switch (step) {
+          case 'CONNECT':
+            if (code === 220) {
+              step = 'EHLO';
+              send('EHLO sphexn.local');
+            } else {
+              reject(new Error(`SMTP connection rejected: ${line}`));
+            }
+            break;
+
+          case 'EHLO':
+            if (code === 250) {
+              if (user && pass) {
+                step = 'AUTH';
+                send('AUTH LOGIN');
+              } else {
+                step = 'MAIL';
+                send(`MAIL FROM:<${from}>`);
+              }
+            } else {
+              reject(new Error(`EHLO failed: ${line}`));
+            }
+            break;
+
+          case 'AUTH':
+            if (code === 334) {
+              step = 'USER';
+              send(Buffer.from(user).toString('base64'));
+            } else {
+              reject(new Error(`AUTH LOGIN rejected: ${line}`));
+            }
+            break;
+
+          case 'USER':
+            if (code === 334) {
+              step = 'PASS';
+              send(Buffer.from(pass).toString('base64'));
+            } else {
+              reject(new Error(`SMTP username rejected: ${line}`));
+            }
+            break;
+
+          case 'PASS':
+            if (code === 235) {
+              step = 'MAIL';
+              send(`MAIL FROM:<${from}>`);
+            } else {
+              reject(new Error(`SMTP authentication failed: ${line}`));
+            }
+            break;
+
+          case 'MAIL':
+            if (code === 250) {
+              step = 'RCPT';
+              send(`RCPT TO:<${to}>`);
+            } else {
+              reject(new Error(`MAIL FROM failed: ${line}`));
+            }
+            break;
+
+          case 'RCPT':
+            if (code === 250) {
+              step = 'DATA';
+              send('DATA');
+            } else {
+              reject(new Error(`RCPT TO failed: ${line}`));
+            }
+            break;
+
+          case 'DATA':
+            if (code === 354) {
+              step = 'BODY';
+              const emailHeaders = [
+                `From: Sphexn Rex <${from}>`,
+                `To: ${to}`,
+                `Subject: ${subject}`,
+                `MIME-Version: 1.0`,
+                `Content-Type: text/html; charset=UTF-8`,
+                ``
+              ].join('\r\n');
+
+              const safeHtml = html.replace(/\r?\n\./g, '\r\n..');
+              socket.write(emailHeaders + '\r\n' + safeHtml + '\r\n.\r\n');
+            } else {
+              reject(new Error(`DATA command failed: ${line}`));
+            }
+            break;
+
+          case 'BODY':
+            if (code === 250) {
+              step = 'QUIT';
+              send('QUIT');
+              clearTimeout(timer);
+              socket.end();
+              resolve({ success: true, message: `Email enviado con éxito vía SMTP a ${to}` });
+            } else {
+              reject(new Error(`SMTP body rejected: ${line}`));
+            }
+            break;
+        }
+      }
+    });
+
+    socket.on('error', (err) => {
+      clearTimeout(timer);
+      reject(err);
+    });
+  });
+}
+
+async function dispatchEmailNotification(recipientsStr, subject, htmlBody) {
+  if (!recipientsStr) return;
+  const recipients = recipientsStr.split(',').map(e => e.trim()).filter(Boolean);
+  if (recipients.length === 0) return;
+
+  const smtpHost = process.env.SMTP_HOST || '';
+  const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
+  const smtpUser = process.env.SMTP_USER || process.env.SMTP_USERNAME || '';
+  const smtpPass = process.env.SMTP_PASS || process.env.SMTP_PASSWORD || '';
+  const smtpFrom = process.env.SMTP_FROM || (smtpUser.includes('@') ? smtpUser : 'sphexn-rex@terra.bot');
+  const resendApiKey = process.env.RESEND_API_KEY || '';
+
+  // 1. Resend REST API
+  if (resendApiKey) {
+    try {
+      console.log(`📧 Despachando correo vía Resend API a: ${recipients.join(', ')}...`);
+      const payload = JSON.stringify({
+        from: smtpFrom.includes('@') ? smtpFrom : 'Sphexn Rex <onboarding@resend.dev>',
+        to: recipients,
+        subject,
+        html: htmlBody
+      });
+
+      await new Promise((resolve, reject) => {
+        const req = https.request({
+          hostname: 'api.resend.com',
+          path: '/emails',
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${resendApiKey}`,
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(payload)
+          }
+        }, (res) => {
+          let resData = '';
+          res.on('data', d => resData += d);
+          res.on('end', () => {
+            if (res.statusCode >= 200 && res.statusCode < 300) {
+              console.log('✅ Correo enviado con éxito vía Resend API.');
+              resolve();
+            } else {
+              reject(new Error(`Resend API devolvió ${res.statusCode}: ${resData}`));
+            }
+          });
+        });
+        req.on('error', reject);
+        req.write(payload);
+        req.end();
+      });
+      return;
+    } catch (err) {
+      console.warn(`⚠️ Error en envío vía Resend API: ${err.message}`);
+    }
+  }
+
+  // 2. SMTP Transport Direct
+  if (smtpHost) {
+    for (const recipient of recipients) {
+      try {
+        console.log(`📧 Despachando correo vía SMTP (${smtpHost}:${smtpPort}) a: ${recipient}...`);
+        const result = await sendSmtpEmail({
+          host: smtpHost,
+          port: smtpPort,
+          user: smtpUser,
+          pass: smtpPass,
+          from: smtpFrom,
+          to: recipient,
+          subject,
+          html: htmlBody
+        });
+        console.log(`✅ ${result.message}`);
+      } catch (err) {
+        console.warn(`⚠️ Error enviando correo a ${recipient} vía SMTP: ${err.message}`);
+      }
+    }
+    return;
+  }
+
+  // 3. Fallback when credentials are not yet configured
+  console.log(`\n📧 Notificación de correo preparada para: ${recipients.join(', ')}`);
+  console.log('   El reporte "sphexn_report.html" ha sido compilado y guardado en disco.');
+  console.log('   ℹ️ Para transmisión en red real, configura SMTP_HOST/SMTP_USER/SMTP_PASS o RESEND_API_KEY en los secrets.');
+}
+
 async function dispatchWebhookNotification(webhookUrl, data) {
   if (!webhookUrl || !webhookUrl.startsWith('http')) return;
   try {
@@ -665,6 +902,7 @@ async function dispatchWebhookNotification(webhookUrl, data) {
     const color = overallSuccess ? 0x10b981 : 0xf43f5e;
 
     const payload = {
+      text: `${emoji} **Sphexn Rex**: Plan "${planTitle}" finalizado en \`${repo}#${branch}\` [${overallSuccess ? 'EXITOSO' : 'FALLIDO'}]`,
       content: `${emoji} **Sphexn Rex**: Plan "${planTitle}" finalizado en \`${repo}#${branch}\``,
       embeds: [{
         title: `Sphexn Rex — DevOps Execution: ${overallSuccess ? 'Success' : 'Failure'}`,
@@ -694,8 +932,15 @@ async function dispatchWebhookNotification(webhookUrl, data) {
           'Content-Length': Buffer.byteLength(bodyStr)
         }
       }, (res) => {
-        res.on('data', () => {});
-        res.on('end', resolve);
+        let resBody = '';
+        res.on('data', chunk => resBody += chunk);
+        res.on('end', () => {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            resolve();
+          } else {
+            reject(new Error(`Webhook HTTP ${res.statusCode}: ${resBody.slice(0, 200)}`));
+          }
+        });
       });
       req.on('error', reject);
       req.write(bodyStr);
@@ -959,10 +1204,10 @@ admin@terra-ecosystem.com
     await dispatchWebhookNotification(effectiveWebhook, reportPayload);
   }
 
-  // Dispatch / Log Email
+  // Dispatch Email
   if (effectiveEmail) {
-    console.log(`\n📧 Notificación de correo lista para: ${effectiveEmail}`);
-    console.log(`   El archivo "sphexn_report.html" contiene la plantilla completa y formateada.`);
+    const emailSubject = `Sphexn Rex: Plan "${settings.title}" [${overallSuccess ? 'ÉXITO' : 'FALLO'}] en ${currentRepo}#${currentBranch}`;
+    await dispatchEmailNotification(effectiveEmail, emailSubject, htmlReport);
   }
 
   console.log(`\n👑 Sphexn Rex finalizado. Estado: ${overallSuccess ? 'EXITOSO ✅' : 'FALLIDO ❌'}\n`);

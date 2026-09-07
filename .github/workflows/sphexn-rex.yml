@@ -99,20 +99,6 @@ jobs:
         run: |
           node .sphexn/rex-runner.cjs
 
-      - name: Send Email Notification (If Configured)
-        if: always() && (github.event.inputs.notify_email != '' || hashFiles('sphexn_report.html') != '')
-        env:
-          SMTP_HOST: ${{ secrets.SMTP_HOST }}
-          SMTP_USER: ${{ secrets.SMTP_USER }}
-          SMTP_PASS: ${{ secrets.SMTP_PASS }}
-          NOTIFY_EMAIL: ${{ github.event.inputs.notify_email }}
-        run: |
-          if [ -n "$SMTP_HOST" ] && [ -n "$SMTP_USER" ] && [ -n "$NOTIFY_EMAIL" ]; then
-            echo "📧 Dispatching email to $NOTIFY_EMAIL via SMTP relay..."
-          else
-            echo "ℹ️ HTML report generated and ready in sphexn_report.html."
-          fi
-
       - name: Commit and Push Rex Tasks & Audits
         if: always()
         run: |
