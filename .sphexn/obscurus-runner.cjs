@@ -29,7 +29,12 @@ const vm = require('vm');
 let fileConfig = {};
 if (fs.existsSync('.sphexn/obscurus.json')) {
   try {
-    fileConfig = JSON.parse(fs.readFileSync('.sphexn/obscurus.json', 'utf8'));
+    const rawJson = JSON.parse(fs.readFileSync('.sphexn/obscurus.json', 'utf8'));
+    fileConfig = rawJson;
+    const currentBranch = process.env.BRANCH || process.env.GITHUB_REF_NAME || 'main';
+    if (rawJson.branches && rawJson.branches[currentBranch]) {
+      fileConfig = Object.assign({}, rawJson, rawJson.branches[currentBranch]);
+    }
   } catch {}
 }
 
